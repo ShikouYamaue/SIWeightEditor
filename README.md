@@ -1,5 +1,7 @@
 # SIWeightEditor
+
 SoftimageにあったWeightEditorをリスペクトして作成したMaya用SkinWeight編集プラグインです。  
+
 ![image](https://user-images.githubusercontent.com/28256498/41656611-8d04f67a-74cb-11e8-856d-c365d2957ed6.png)
 
 ## インストール
@@ -127,6 +129,7 @@ iマーク →　検索をインタラクティブに行うかどうか。有効
 
 ## Futures
 ・現状20000triangleくらいからもっさりしますが、これから更なる高速化を目指しています。  
+・有効な機能を絞った高速編集モードをつけるかも
 ・固定値入力ボタンつけるかも  
 ・UIの色指定機能つけるかも  
 ・Show Bad の挙動を少し変更するかも  
