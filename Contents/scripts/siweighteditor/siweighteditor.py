@@ -32,7 +32,7 @@ except ImportError:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-VERSION = 'r1.0.0'
+VERSION = 'r1.0.1'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -1398,9 +1398,11 @@ class MainWindow(qt.MainWindow):
     def toggle_lock_weight(self,section_id):
         for lock_data in self.weight_lock_data:
             if lock_data[1] == section_id:
+                #print 'unlock wt'
                 self.unlock_weight()
                 break
         else:
+            #print 'lock wt'
             self.lock_weight()
         self.sel_model.clearSelection()
             
@@ -1416,6 +1418,7 @@ class MainWindow(qt.MainWindow):
             row = cell_id.row()
             column = cell_id.column()
             index = (row, column)
+            self.weight_lock_data.add(index)
             self.weight_model.weight_lock_cells.add(index)
             
             #事前に格納しておいた行のデータを引き出す
@@ -1461,6 +1464,10 @@ class MainWindow(qt.MainWindow):
             row = cell_id.row()
             column = cell_id.column()
             index = (row, column)
+            try:
+                self.weight_lock_data.remove(index)
+            except:
+                pass
             try:
                 self.weight_model.weight_lock_cells.remove(index)
             except:
@@ -1521,6 +1528,7 @@ class MainWindow(qt.MainWindow):
     def clear_lock_weight(self):
         self.vtx_lock_data_dict = defaultdict(lambda : set())
         self.weight_model.weight_lock_cells = set()
+        self.weight_lock_data = set()
         self.refresh_table_view()#ビューの更新
         for skin_cluster in self.all_skin_clusters.values():
             attrs = cmds.listAttr(skin_cluster)
