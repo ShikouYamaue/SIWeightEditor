@@ -51,7 +51,7 @@ Cマーク　→ 表示のクリア
 合計1.0以上 → オレンジ  
 指定インフルエンス数以上の使用 →　黄色  
 上図ボタンから不正頂点ウェイトの絞り込み表示ができます。  
-
+![siweighteditor3](https://user-images.githubusercontent.com/28256498/41658498-78b4f0f2-74d1-11e8-9ea2-7762382a7ee6.gif)
 
 ### 
 ![image](https://user-images.githubusercontent.com/28256498/41657816-8c1e1706-74cf-11e8-8a4d-5c54bbbdb838.png)
