@@ -31,8 +31,13 @@ Filter → 表示されているインフルエンスのうちウェイト合計
 Highlite → セル選択された頂点をビューポート上でハイライトする  
 ![siweighteditor1](https://user-images.githubusercontent.com/28256498/41657246-b371c3e0-74cd-11e8-8dbd-5a5b3828902c.gif)
 
-### ジョイント設定
 ![image](https://user-images.githubusercontent.com/28256498/41657474-6d59d6d0-74ce-11e8-964c-095097aeb6a3.png)
+鍵マーク　→ メッシュ選択変更のUIへの反映をロックします。一時的にウェイトエディタ表示の更新を止めたい場合に  
+サイクルマーク　→ 現在の選択をUIに反映します。鍵マークでロックがかかっていても強制的に反映  
+Cマーク　→ 表示のクリア  
+⇄マーク　→ セル上の選択頂点を実際に選択し、UI表示も絞り込みます。  
+0-1　→ ウェイトを0.0～1.0で表示します（Maya仕様）  
+0-100　→ ウェイトを0.0～100.0で表示します（SI仕様）  
+![siweighteditor2](https://user-images.githubusercontent.com/28256498/41657833-95a15ab8-74cf-11e8-883c-27eb48edcd21.gif)
 
-
-
+![image](https://user-images.githubusercontent.com/28256498/41657816-8c1e1706-74cf-11e8-8a4d-5c54bbbdb838.png)
