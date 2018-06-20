@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0.0"
+	ProductType="Application"
+
+	AutodeskProduct="Maya"
+	Name="SiWeightEditor"
+	Description="Autodesk Maya SiWeightEditor"
+	AppVersion="1.0.0"
+	Author="ys"
+	AppNameSpace="com.autodesk.exchange.maya.siweighteditor"
+	HelpFile=""
+	OnlineDocumentation=""
+
+	ProductCode="*"
+>
+	
+	<CompanyDetails Name="ys"
+		Phone=" "
+		Url=""
+		Email="" />
+
+	<RuntimeRequirements SupportPath="./Contents" OS="win64|macOS|linux" Platform="Maya" SeriesMin="2014"/>
+
+	<Components>
+		<RuntimeRequirements SupportPath="./Contents" OS="win64" Platform="Maya" SeriesMin="2014"/>
+		<ComponentEntry ModuleName="./scripts/userSetup.py" />
+	</Components>
+	
+</ApplicationPackage>
