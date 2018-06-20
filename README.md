@@ -24,6 +24,7 @@ ApplicationPluginsフォルダが存在しない場合は作成してくださ�
 
 ### 基本UI表示
 ![image](https://user-images.githubusercontent.com/28256498/41656766-14a74cae-74cc-11e8-8226-e19d64a98ae2.png)
+
 Show → 選択したテーブルセルに表示をフォーカスする。  
 Show All → オブジェクトのウェイトを全表示する  
 Focus　→ コンポーネント選択をセル表示に反映する  
@@ -32,6 +33,7 @@ Highlite → セル選択された頂点をビューポート上でハイライ�
 ![siweighteditor1](https://user-images.githubusercontent.com/28256498/41657246-b371c3e0-74cd-11e8-8dbd-5a5b3828902c.gif)
 
 ![image](https://user-images.githubusercontent.com/28256498/41657474-6d59d6d0-74ce-11e8-964c-095097aeb6a3.png)
+
 鍵マーク　→ メッシュ選択変更のUIへの反映をロックします。一時的にウェイトエディタ表示の更新を止めたい場合に  
 サイクルマーク　→ 現在の選択をUIに反映します。鍵マークでロックがかかっていても強制的に反映  
 Cマーク　→ 表示のクリア  
