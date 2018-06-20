@@ -1,4 +1,7 @@
 # SIWeightEditor
+SoftimageにあったWeightEditorをリスペクトして作成したMaya用SkinWeight編集プラグインです。
+![image](https://user-images.githubusercontent.com/28256498/41656611-8d04f67a-74cb-11e8-856d-c365d2957ed6.png)
+
 ## インストール
 
 Clone or download > Download ZIP もしくは
@@ -16,3 +19,18 @@ C:\Program Files\Autodesk\ApplicationPlugins
 ApplicationPluginsフォルダが存在しない場合は作成してください。
 
 動作確認はMaya2015～2018で行っています。
+
+## 主な機能
+
+# UI表示
+![image](https://user-images.githubusercontent.com/28256498/41656766-14a74cae-74cc-11e8-8226-e19d64a98ae2.png)
+Show → 選択したテーブルセルに表示をフォーカスする。
+Show All → オブジェクトのウェイトを全表示する
+Focus　→ コンポーネント選択をセル表示に反映する
+Filter → 表示されているインフルエンスのうちウェイト合計が0のものを非表示にする
+Highlite → セル選択された頂点をビューポート上でハイライトする
+![siweighteditor1](https://user-images.githubusercontent.com/28256498/41657246-b371c3e0-74cd-11e8-8dbd-5a5b3828902c.gif)
+
+
+
+
