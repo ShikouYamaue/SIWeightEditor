@@ -107,3 +107,25 @@ Lock Wt　→　選択したセルのウェイト値をロックします。
 Unlock Wt　→　選択したセルのウェイト値をアンロックします。  
 Clear locks　→　すべてのウェイトロックを解除します。  
 またカラムをダブルクリックすることで列ごとのロック、アンロックを一括トグルできます。  
+
+![siweighteditor8](https://user-images.githubusercontent.com/28256498/41661699-3fc866b2-74da-11e8-969c-1da1644da3a7.gif)
+
+## オプション機能
+
+###　0セルの明るさ指定、インフルエンスサーチ
+![image](https://user-images.githubusercontent.com/28256498/41661612-12c4e19a-74da-11e8-8a9f-61b90b04f617.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
