@@ -75,7 +75,7 @@ Displayd Digit → 小数点以下の表示桁数を指定
 Round Off →　指定桁数以下の端数を四捨五入します。  
 何も選択せずに実行すると全ての頂点に対して実行します。  
 
-![image](https://user-images.githubusercontent.com/28256498/41659037-2905c37c-74d3-11e8-8d57-7ef070a6ed94.png)
+![siweighteditor4](https://user-images.githubusercontent.com/28256498/41664495-d59099d4-74e0-11e8-9f81-c24f26e335ea.gif)
 
 ### ジョイントハイライト、ジョイント選択機能
 nsrt各ボタン　→　UIのジョイントカラム右クリックするとジョイント選択、その時に適用するSRTマニピュレータを指定します。  
