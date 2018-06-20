@@ -22,6 +22,11 @@ ApplicationPluginsフォルダが存在しない場合は作成してくださ�
 
 動作確認はMaya2015～2018で行っています。  
 
+インストールに成功するとウィンドウ以下に項目が追加されます。  
+
+![image](https://user-images.githubusercontent.com/28256498/41663300-0ba78a1c-74de-11e8-82b6-fcc5f1435931.png)
+
+
 ## 主な機能・UI
 
 ### 基本UI表示1
