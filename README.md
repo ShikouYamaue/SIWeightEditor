@@ -7,7 +7,7 @@ release > Source code (zip) からZIPファイルをダウンロードしてく�
 解凍したSiWeightEditorフォルダを C:\Program Files\Autodesk\ApplicationPlugins へコピーしてください。
 ディレクトリ構成などは変更せず解凍フォルダごとそのまま設置します。
 
-![image](https://user-images.githubusercontent.com/28256498/41656200-21c9a834-74ca-11e8-9053-4dc39739fb60.png)
+![image](https://user-images.githubusercontent.com/28256498/41656276-639ab2d0-74ca-11e8-8be2-3c26f8a17927.png)
 
 MayaをCドライブ以外にインストールしている場合でも
 C:\Program Files\Autodesk\ApplicationPlugins  
