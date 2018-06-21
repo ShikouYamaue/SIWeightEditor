@@ -22,6 +22,7 @@ import itertools
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 import json
+import webbrowser
 import imp
 try:
     imp.find_module('PySide2')
@@ -32,7 +33,7 @@ except ImportError:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-VERSION = 'r1.0.1'
+VERSION = 'r1.0.2'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -48,6 +49,11 @@ BUTTON_HEIGHT = 22
 
 #速度計測結果を表示するかどうか
 COUNTER_PRINT = False
+
+#GitHub
+HELP_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/blob/master/README.md'
+#リリースページ
+REREASE_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/releases'
 
 #焼きこみプラグインをロードしておく
 try:
@@ -1004,11 +1010,11 @@ class MainWindow(qt.MainWindow):
         mode_layout = QHBoxLayout()
         mode_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         mode_widget.setLayout(mode_layout)
-        but_w = 45
+        but_w = 38
         norm_w =68
         space = 26
-        mode_widget.setMinimumWidth(but_w*3+norm_w*2+space+BUTTON_HEIGHT)
-        mode_widget.setMaximumWidth(but_w*3+norm_w*2+space+BUTTON_HEIGHT)
+        mode_widget.setMinimumWidth(but_w*3+norm_w*2+space)
+        mode_widget.setMaximumWidth(but_w*3+norm_w*2+space)
         mode_widget.setMaximumHeight(WIDGET_HEIGHT)
         self.mode_but_group = QButtonGroup()
         tip = lang.Lang(en='Values entered represent absolute values', ja=u'絶対値で再入力').output()
@@ -1039,15 +1045,11 @@ class MainWindow(qt.MainWindow):
         self.mode_but_group.addButton(self.add_but, 1)
         self.mode_but_group.addButton(self.add_par_but, 2)
         self.mode_but_group.button(self.mode).setChecked(True)
-        tip = lang.Lang(en='Display help', ja=u'ヘルプの表示').output()
-        self.help_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
-                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'help.png', tip=tip)
         mode_layout.addWidget(self.abs_but)
         mode_layout.addWidget(self.add_but)
         mode_layout.addWidget(self.add_par_but)
         mode_layout.addWidget(self.norm_but)
         mode_layout.addWidget(self.no_limit_but)
-        mode_layout.addWidget(self.help_but)
         
         #ジョイント選択ツールタイプ
         sel_joint_widget = QWidget()
@@ -1144,24 +1146,6 @@ class MainWindow(qt.MainWindow):
         sub_tool_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         
         
-        tip = lang.Lang(en='Set the brightness of the cell character whose value is zero', 
-                            ja=u'値がゼロのセル文字の明るさを設定').output()
-        
-        label = QLabel('')
-        label.setPixmap(QPixmap(self.icon_path+'value.png'))
-        label.setToolTip(tip)
-        sub_tool_layout.addWidget(label)
-        sub_tool_layout.addWidget(QLabel(' '))
-        
-        self.zero_darken = EditorDoubleSpinbox()#スピンボックス
-        self.zero_darken.setButtonSymbols(QAbstractSpinBox.NoButtons)
-        self.zero_darken.setRange(0, 999)
-        self.zero_darken.setValue(self.darken_value)#値を設定
-        self.zero_darken.setDecimals(0)#値を設定
-        self.zero_darken.editingFinished.connect(self.zero_cell_darken)#値を設定
-        self.zero_darken.setToolTip(tip)
-        sub_tool_layout.addWidget(self.zero_darken)
-        
         '''
         tip = lang.Lang(en='Do not initialize the weight table when cancellation of selection', 
                                 ja=u'選択解除時にウェイトテーブルを初期化しない').output()
@@ -1170,6 +1154,14 @@ class MainWindow(qt.MainWindow):
         self.no_sel_lock_but.setChecked(self.no_sel_lock)
         sub_tool_layout.addWidget(self.no_sel_lock_but)
         '''
+        #サブツール類のレイアウト
+        sub_tool_layout.addWidget(QLabel(' '))
+        
+        tip = lang.Lang(en='Execute a weight hammer at the vertex of the selected cell', ja=u'選択セルの頂点にウェイトハンマーを実行する').output()
+        self.hummer_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'hummer.png', tip=tip)
+        self.hummer_but.clicked.connect(self.hummer_weight)
+        sub_tool_layout.addWidget(self.hummer_but)
         
         sub_tool_layout.addWidget(QLabel(' '))
         sub_tool_layout.addWidget(qt.make_v_line())
@@ -1226,12 +1218,58 @@ class MainWindow(qt.MainWindow):
         self.main_layout.addWidget(self.view_widget)
         
         msg_layout = QHBoxLayout()
+        
+        tip = lang.Lang(en='Set the brightness of the cell character whose value is zero', 
+                            ja=u'値がゼロのセル文字の明るさを設定').output()
+        label = QLabel('')
+        label.setPixmap(QPixmap(self.icon_path+'value.png'))
+        label.setToolTip(tip)
+        label.setMaximumWidth(20)
+        label.setMinimumWidth(20)
+        msg_layout.addWidget(label)
+        self.zero_darken = EditorDoubleSpinbox()#スピンボックス
+        self.zero_darken.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.zero_darken.setRange(0, 999)
+        self.zero_darken.setValue(self.darken_value)#値を設定
+        self.zero_darken.setDecimals(0)#値を設定
+        self.zero_darken.editingFinished.connect(self.zero_cell_darken)#値を設定
+        self.zero_darken.setToolTip(tip)
+        self.zero_darken.setMaximumWidth(35)
+        self.zero_darken.setMinimumWidth(35)
+        msg_layout.addWidget(self.zero_darken)
+        
+        msg_layout.addWidget(qt.make_v_line())
+        
+        tip = lang.Lang(en='Display help page', ja=u'ヘルプページの表示').output()
+        self.release_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'release.png', tip=tip)
+        
+        self.release_but.clicked.connect(lambda : webbrowser.open(REREASE_PATH))
+        msg_layout.addWidget(self.release_but)
+        
+        tip = lang.Lang(en='Show latest release page', ja=u'最新リリースページを表示').output()
+        self.help_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'help.png', tip=tip)
+        
+        self.help_but.clicked.connect(lambda : webbrowser.open(HELP_PATH))
+        msg_layout.addWidget(self.help_but)
+        
+        msg_layout.addWidget(qt.make_v_line())
+        
+        #実行時間のお知らせ
         self.main_layout.addLayout(msg_layout)
         self.time_label = QLabel('- Calculation Time - 0.00000 sec')
+        self.time_label.setMaximumWidth(200)
+        self.time_label.setMinimumWidth(200)
         msg_layout.addWidget(self.time_label)
+        
         msg_layout.addWidget(qt.make_v_line())
+        
+        #ウェイトエディタからの通知
         self.msg_label = QLabel('')
         msg_layout.addWidget(self.msg_label)
+        
+        msg_layout.setSpacing(6)#ウェジェットどうしの間隔を設定する
         
         self.create_job()
         self.get_set_skin_weight()#起動時に取得実行
@@ -1296,6 +1334,29 @@ class MainWindow(qt.MainWindow):
         #行に対するカラムの選択はないことにする
         for row in self.update_rows:
             self.row_column_dict[row] = []
+            
+    #ウェイトハンマーの実行、後でちゃんとする
+    def hummer_weight(self):
+        current_selection = cmds.ls(sl=True, l=True)
+        self.setup_update_row_data()#焼きこみ対象の行を設定する
+        target_vertices = []
+        for row in self.update_rows:
+            target_vertices.append(self.vtx_row_dict[row][5])
+        
+        cmds.undoInfo(swf=False)
+        self.hilite_flag = True
+        cmds.select(target_vertices, r=True)
+        cmds.undoInfo(swf=True)
+        
+        mel.eval('weightHammerVerts;')
+        
+        cmds.undoInfo(swf=False)
+        self.hilite_flag = True
+        cmds.select(current_selection, r=True)
+        cmds.undoInfo(swf=True)
+        
+        self.get_set_skin_weight(node_vtx_dict=self.node_vtx_dict)
+            
             
     #エンフォースリミットと強制ノーマライズ実行
     def enforce_limit_and_normalize(self, force_norm=False):
@@ -2302,6 +2363,7 @@ class MainWindow(qt.MainWindow):
             return
         last_row = list(self.update_rows)[-1]
         for row in self.update_rows:
+            force_norm_flag = False
             bake_with_norm = False
             bake_weight_flag = True
             #事前に格納しておいた行のデータを引き出す
@@ -2327,21 +2389,30 @@ class MainWindow(qt.MainWindow):
             #エンフォースリミットを実行
             if enforce >= 1:
                 #ロックされてるものは無限大にしておいてあとで数値戻す
+                lock_sign_count = 0#ロックされているもののうち有効数字が入っているものの数
                 if locked_inf_id_list:
                     org_weight_list = new_weight[:]
                     for i in locked_inf_id_list:
                         if new_weight[i]:#ウェイト値が0でなければ無限に
+                            lock_sign_count += 1
                             new_weight[i] = float('inf')
+                #ロック有効数字がエンフォースリミットより多い時は有効数+1でまとめる
+                if enforce <= lock_sign_count:
+                    temp_enforce = lock_sign_count+1
+                else:
+                    temp_enforce = enforce
                 influence_count = all_influences_count - new_weight.count(0.0)
-                if influence_count <= enforce:
-                    continue
-                enforce_list = sorted([[i, w]for i, w in enumerate(new_weight)], key=lambda x:x[1], reverse=True)
-                enforce_list = [iw if i < enforce else [iw[0], 0.0] for i, iw in enumerate(enforce_list)]
-                new_weight = [iw[1] for iw in sorted(enforce_list, key=lambda x:x[0])]
-                for i in locked_inf_id_list:
-                    new_weight[i] = org_weight_list[i]
-                self.row_column_dict[row] = []
-                force_norm_flag = True
+                if influence_count <= temp_enforce:#エンフォース数を下回っているときは元の値
+                    new_weight = org_weight
+                else:
+                    enforce_list = sorted([[i, w]for i, w in enumerate(new_weight)], key=lambda x:x[1], reverse=True)
+                    enforce_list = [iw if i < temp_enforce else [iw[0], 0.0] for i, iw in enumerate(enforce_list)]
+                    new_weight = [iw[1] for iw in sorted(enforce_list, key=lambda x:x[0])]
+                    for i in locked_inf_id_list:
+                        new_weight[i] = org_weight_list[i]
+                    self.row_column_dict[row] = []
+                    force_norm_flag = True
+                    
             #桁数丸めを実行
             elif round_digit is not None:
                 pre_round_sum = round(sum(new_weight), 10)
@@ -2357,6 +2428,8 @@ class MainWindow(qt.MainWindow):
                             break
                     new_weight = round_weight
                 force_norm_flag = False#丸めの時は平均化しない
+                norm_flag = False
+                
             elif enforce == 0:
                 force_norm_flag = False
             else:
@@ -2364,8 +2437,10 @@ class MainWindow(qt.MainWindow):
             
             #ウェイト合計を出す0.2sec
             all_weight_sum = sum(new_weight)
-            if all_weight_sum ==1.0 and enforce == -1:
-                continue
+            #if all_weight_sum == 1.0 and enforce == -1 and round_digit:
+                #norm_flag = False
+                #force_norm_flag =  False
+                #new_weight = org_weight
             #合計が1.0より大きければ強制的に正規化する
             if all_weight_sum > 1.0 and not self.no_limit_but.isChecked():
                 force_norm_flag = True
@@ -2373,59 +2448,63 @@ class MainWindow(qt.MainWindow):
                 pass
             else:
                 force_norm_flag = False
-            #ロックされているウェイトの合計を出しておく
-            locked_sum = sum([new_weight[i] for i in locked_inf_id_list])
             
-            #ウェイト平均化処理0.2sec
+            #ウェイト正規化処理0.2sec
             if norm_flag or force_norm_flag:
-                #ロック合計が1.0以上なら正規化できないので抜ける
+                norm_weight = []#正規化格納用
+                #ロックされているウェイトの合計を出しておく
+                locked_sum = sum([new_weight[i] for i in locked_inf_id_list])
+                #ロック合計が1.0以上なら他は0.0に
                 if locked_sum >= 1.0:
-                    continue
-                
-                bake_with_norm = True
-                column_list = self.row_column_dict[row]#行のうち選択されているカラムのリスト
-                column_inf_id_list = [node_influence_id_list[i] for i in column_list]#選択カラムに対応するインフルエンスのリスト
-                select_sum = sum([new_weight[i] for i in column_inf_id_list if i is not None])#選択してるカラムの合計値
-                other_inf_id_list = list(set(row_inf_id_list) - set(column_inf_id_list))
-                other_sum = sum([new_weight[i] for i in other_inf_id_list]) - locked_sum
-                ##ロックセル以外の合計が0.0の場合は正規化できないので変更前の値にもどす
-                if other_sum + select_sum == 0.0:
-                    new_weight = org_weight
-                    select_sum = sum([new_weight[i] for i in column_inf_id_list if i is not None])#選択してるカラムの合計値
-                
-                norm_weight = []
-                #選択セルの合計1以上の時のノーマライズ処理
-                if select_sum + locked_sum >= 1.0:
                     for i, w in  enumerate(new_weight):
                         if i in locked_inf_id_list:
                             norm_weight.append(w)
-                        elif  i in column_inf_id_list:
-                            norm_weight.append(w/select_sum*(1.0-locked_sum))
                         else:
                             norm_weight.append(0.0)
-                #1より小さい時のノーマライズ処理
-                elif select_sum < 1.0:
-                    all_sum = select_sum + locked_sum
-                    if all_sum >= 1.0 or other_sum == 0.0:
-                        if other_sum == select_sum == 0.0:
-                            if not enforce:
-                                bake_weight_flag = False
-                        other_ratio = 0.0
-                        if select_sum != 0.0:
-                            ratio = (1 - locked_sum) / select_sum
+                else:
+                    bake_with_norm = True
+                    column_list = self.row_column_dict[row]#行のうち選択されているカラムのリスト
+                    column_inf_id_list = [node_influence_id_list[i] for i in column_list]#選択カラムに対応するインフルエンスのリスト
+                    select_sum = sum([new_weight[i] for i in column_inf_id_list if i is not None])#選択してるカラムの合計値
+                    other_inf_id_list = list(set(row_inf_id_list) - set(column_inf_id_list))
+                    other_sum = sum([new_weight[i] for i in other_inf_id_list]) - locked_sum
+                    ##ロックセル以外の合計が0.0の場合は正規化できないので変更前の値にもどす
+                    if other_sum + select_sum == 0.0:
+                        new_weight = org_weight
+                        select_sum = sum([new_weight[i] for i in column_inf_id_list if i is not None])#選択してるカラムの合計値
+                    
+                    #選択セルの合計1以上の時のノーマライズ処理
+                    if select_sum + locked_sum >= 1.0:
+                        for i, w in  enumerate(new_weight):
+                            if i in locked_inf_id_list:
+                                norm_weight.append(w)
+                            elif  i in column_inf_id_list:
+                                norm_weight.append(w/select_sum*(1.0-locked_sum))
+                            else:
+                                norm_weight.append(0.0)
+                    #1より小さい時のノーマライズ処理
+                    elif select_sum < 1.0:
+                        all_sum = select_sum + locked_sum
+                        if all_sum >= 1.0 or other_sum == 0.0:
+                            if other_sum == select_sum == 0.0:
+                                if not enforce:
+                                    bake_weight_flag = False
+                            other_ratio = 0.0
+                            if select_sum != 0.0:
+                                ratio = (1 - locked_sum) / select_sum
+                            else:
+                                ratio = 0.0
                         else:
-                            ratio = 0.0
-                    else:
-                        new_other_sum = 1.0 - all_sum
-                        other_ratio = new_other_sum / other_sum
-                        ratio = 1.0
-                    for i, w in  enumerate(new_weight):
-                        if i in locked_inf_id_list:
-                            norm_weight.append(w)
-                        elif i in column_inf_id_list:
-                            norm_weight.append(new_weight[i]  * ratio)
-                        else:
-                            norm_weight.append(new_weight[i]  * other_ratio)
+                            new_other_sum = 1.0 - all_sum
+                            other_ratio = new_other_sum / other_sum
+                            ratio = 1.0
+                        for i, w in  enumerate(new_weight):
+                            if i in locked_inf_id_list:
+                                norm_weight.append(w)
+                            elif i in column_inf_id_list:
+                                norm_weight.append(new_weight[i]  * ratio)
+                            else:
+                                norm_weight.append(new_weight[i]  * other_ratio)
                 new_weight = norm_weight[:]
                 #print 'normalaized weight :', new_weight
                 
