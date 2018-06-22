@@ -48,7 +48,7 @@ WIDGET_HEIGHT = 32
 BUTTON_HEIGHT = 22
 
 #速度計測結果を表示するかどうか
-COUNTER_PRINT = True
+COUNTER_PRINT = False
 
 #GitHub
 HELP_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/blob/master/README.md'
