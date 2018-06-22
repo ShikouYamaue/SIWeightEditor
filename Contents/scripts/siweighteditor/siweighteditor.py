@@ -33,7 +33,7 @@ except ImportError:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-VERSION = 'r1.0.2'
+VERSION = 'r1.0.3'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -48,7 +48,7 @@ WIDGET_HEIGHT = 32
 BUTTON_HEIGHT = 22
 
 #速度計測結果を表示するかどうか
-COUNTER_PRINT = False
+COUNTER_PRINT = True
 
 #GitHub
 HELP_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/blob/master/README.md'
@@ -2239,8 +2239,13 @@ class MainWindow(qt.MainWindow):
     pre_new_value = 0.0
     selected_items = []
     select_change_flag = True
+    from_spinbox =False
     #入力値をモードに合わせてセルの値と合算、セルに値を戻す
     def culc_cell_value(self, from_spinbox=False, from_input_box=False):
+        if self.from_spinbox:
+            self.from_spinbox = False
+            return
+        self.from_spinbox = from_spinbox
         self.counter.reset()
         
         self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
@@ -2288,6 +2293,7 @@ class MainWindow(qt.MainWindow):
                 self.update_rows.add(row)
                 self.row_column_dict[row].append(column)#行に対応する選択カラムを記録する
             after_value = new_value
+            #print 'new_abs_value',new_value, from_spinbox, from_input_box
         else:
             #最大最小を設定しておく
             min_value = 0.0
@@ -2318,6 +2324,7 @@ class MainWindow(qt.MainWindow):
                     added_value = 0.0
                     
                 self.weight_model.setData(cell_id, added_value)
+                #print 'new_add_value',added_value, from_spinbox, from_input_box
                     
             #処理後のスピンボックスの値を設定
             if from_spinbox:
