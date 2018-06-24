@@ -33,7 +33,7 @@ except ImportError:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-VERSION = 'r1.0.3'
+VERSION = 'r1.0.4'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -1850,6 +1850,12 @@ class MainWindow(qt.MainWindow):
                     
         self.counter.count(string='get vtx weight :')
         
+        #ジョイント選択機能が働いていたらツールを戻す
+        if self.pre_tool:
+            cmds.setToolTo(self.pre_tool)
+            self.pre_tool = None
+        
+        self.header_selection = []#ヘッダーからのジョイント選択復元リストを初期化
         self.all_rows = 0#右クリックウィンドウ補正用サイズを出すため全行の桁数を数える
         self.v_header_list = []#縦ヘッダーの表示リスト
         self._data = []#全体のテーブルデータを格納する
@@ -2044,13 +2050,18 @@ class MainWindow(qt.MainWindow):
         self.reset_message()#メッセージ初期化
         if self.pre_tool:
             self.hilite_flag = True#get_setしないためのフラグ
+            #print 'hl nodes :', self.hl_nodes
             if self.pre_comp_mode:
                 cmds.selectMode(co=True)
-                cmds.hilite(self.hl_nodes, r=True)
+                #cmds.hilite(self.hl_nodes, r=True)
             else:
                 cmds.selectMode(o=True)
-            cmds.setToolTo(self.pre_tool)
-            cmds.select(self.header_selection, r=True)
+            if self.pre_tool:
+                cmds.setToolTo(self.pre_tool)
+            #print 'header selection :', self.header_selection
+            if self.header_selection:
+                cmds.hilite(self.hl_nodes, r=True)
+                cmds.select(self.header_selection, r=True)
             self.pre_tool = None
             self.header_selection = None
         self.select_change_flag = True
@@ -2174,7 +2185,7 @@ class MainWindow(qt.MainWindow):
     def select_joint_from_header(self):
         cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
         self.pre_tool = cmds.currentCtx()#ツールを復旧するために取得
-        self.header_selection = self.original_selection
+        self.header_selection = self.original_selection[:]
         self.pre_comp_mode = cmds.selectMode(q=True, co=True)
         v_header = self.view_widget.verticalHeader()
         v_header_width = v_header.sizeHint().width()

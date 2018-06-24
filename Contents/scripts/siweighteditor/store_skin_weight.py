@@ -14,24 +14,12 @@ class StoreSkinWeight():
     #指定ノード中の選択バーテックスを返す
     def om_selected_mesh_vertex(self, node, show_bad=False):
         sList = om.MSelectionList()
-        if cmds.selectMode(q=True, co=True) and not show_bad:
-            om.MGlobal.getActiveSelectionList(sList)
-        else:
-            #オブジェクト選択の時は子のノードも含める
-            #self.hl_nodes = cmds.ls(sl=True, l=True, tr=True)
-            selection = cmds.ls(sl=True, type='float3')#コンポーネント選択が混じる場合は強制的にモード変更する
-            if selection:
-                cmds.selectMode(co=True)
-                om.MGlobal.getActiveSelectionList(sList)
-            else:
-                self.hl_nodes = common.search_polygon_mesh(node, fullPath=True, serchChildeNode=True)
-                for node in self.hl_nodes[:]:
-                    sList.add(node)
+        om.MGlobal.getActiveSelectionList(sList)
                 
         iter = om.MItSelectionList(sList)
         selObj = {}
         loop = 0
-        vtxArray = []
+        vtxArrays = []
         while not iter.isDone():
             loop += 1
             if loop >= 10000:
@@ -57,14 +45,42 @@ class StoreSkinWeight():
             
             #print 'get current vtx :', node, mesh_path_name
             skinFn, vtxArray, skinName = self.adust_to_vertex_list(meshDag, component)
-            return vtxArray
+            #print 'get vtx array :', vtxArray
+            vtxArrays += vtxArray
+            #return vtxArray
             #print 'get selected vtx array', vtxArray
             #print 'get current vtx :', vtxArray
             iter.next()
-        return []
+        return vtxArrays
+       
         
     #すべてのバーテックスIDリストとメッシュ情報の辞書を作って返す
     def om_all_mesh_vertex(self):
+        sList = om.MSelectionList()
+        om.MGlobal.getActiveSelectionList(sList)
+        iter = om.MItSelectionList(sList)
+        loop = 0
+        om_add_nodes = []
+        while not iter.isDone():
+            loop += 1
+            if loop >= 10000:
+                print 'too many loop :'
+                return []
+            meshDag = om.MDagPath()
+            component = om.MObject()
+            try:
+                iter.getDagPath(meshDag, component)
+                #print 'get dag node :', meshDag.fullPathName()
+            except:#2016ではノード出したばかりの状態でシェイプがなぜか帰ってくるのでエラー回避
+                iter.next()
+                continue
+            mesh_path_name = meshDag.fullPathName()
+            om_add_nodes += [mesh_path_name]
+            iter.next()
+        #print 'om add nodes :', om_add_nodes
+        om_add_nodes = [cmds.listRelatives(node, p=True, f=True)[0] if cmds.nodeType(node) == 'mesh' else node for node in om_add_nodes]
+        #print 'om add nodes :', om_add_nodes
+        
         if cmds.selectMode(q=True, co=True):
             #コンポーネント選択の時でもこのポイントがハイライトされた時表示されるように末端まで取る
             self.hl_nodes = cmds.ls(hl=True, l=True)
@@ -72,9 +88,14 @@ class StoreSkinWeight():
             add_node = common.search_polygon_mesh(cmds.ls(sl=True, l=True, tr=True), fullPath=True, serchChildeNode=True)
             if add_node:
                 self.hl_nodes += add_node
+            if om_add_nodes:
+                self.hl_nodes += om_add_nodes
         else:
             self.hl_nodes = cmds.ls(sl=True, l=True, tr=True) + cmds.ls(hl=True, l=True, tr=True)
             self.hl_nodes = common.search_polygon_mesh(self.hl_nodes, fullPath=True, serchChildeNode=True)
+            if om_add_nodes:
+                self.hl_nodes += om_add_nodes
+        self.hl_nodes += list(set(self.hl_nodes))
             
         for node in self.hl_nodes[:]:
             
