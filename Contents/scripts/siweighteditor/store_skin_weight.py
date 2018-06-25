@@ -95,7 +95,7 @@ class StoreSkinWeight():
             self.hl_nodes = common.search_polygon_mesh(self.hl_nodes, fullPath=True, serchChildeNode=True)
             if om_add_nodes:
                 self.hl_nodes += om_add_nodes
-        self.hl_nodes += list(set(self.hl_nodes))
+        self.hl_nodes = list(set(self.hl_nodes))
             
         for node in self.hl_nodes[:]:
             
