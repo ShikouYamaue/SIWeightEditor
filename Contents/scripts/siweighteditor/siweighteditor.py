@@ -33,7 +33,7 @@ except ImportError:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-VERSION = 'r1.0.4'
+VERSION = 'r1.0.5'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
