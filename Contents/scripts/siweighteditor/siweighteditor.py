@@ -5,7 +5,6 @@ import pymel.core as pm
 from . import common
 from . import lang
 from . import qt
-from . import store_skin_weight
 import re
 import os
 import locale
@@ -33,7 +32,14 @@ except ImportError:
     from PySide.QtGui import *
     from PySide.QtCore import *
 
-VERSION = 'r1.0.5'
+MAYA_VER = int(cmds.about(v=True)[:4])
+
+if MAYA_VER >= 2016:
+    from . import store_skin_weight_om2 as store_skin_weight
+else:
+    from . import store_skin_weight
+
+VERSION = 'r1.0.6'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -2366,12 +2372,18 @@ class MainWindow(qt.MainWindow):
             norm_flag = self.norm_but.isChecked()
         new_data = self.weight_model._data
         #print 'get new_data :', new_data
-        self.bake_node_id_dict = defaultdict(lambda : om.MIntArray())
-        self.bake_node_weight_dict = defaultdict(lambda : om.MDoubleArray())
-        self.bake_node_inf_dict = defaultdict(lambda : om.MIntArray())
+        if MAYA_VER >= 2016:
+            self.bake_node_id_dict = defaultdict(lambda : om2.MIntArray())
+            self.bake_node_weight_dict = defaultdict(lambda : om2.MDoubleArray())
+            self.bake_node_inf_dict = defaultdict(lambda : om2.MIntArray())
+            self.org_node_weight_dict = defaultdict(lambda : om2.MDoubleArray())
+        else:
+            self.bake_node_id_dict = defaultdict(lambda : om.MIntArray())
+            self.bake_node_weight_dict = defaultdict(lambda : om.MDoubleArray())
+            self.bake_node_inf_dict = defaultdict(lambda : om.MIntArray())
+            self.org_node_weight_dict = defaultdict(lambda : om.MDoubleArray())
         self.undo_node_weight_dict = defaultdict(lambda : [])
         self.redo_node_weight_dict = defaultdict(lambda : [])
-        self.org_node_weight_dict = defaultdict(lambda : om.MDoubleArray())
         node_weight_list = []
         org_node_weight_list = []
         pre_node = None
@@ -2535,13 +2547,19 @@ class MainWindow(qt.MainWindow):
                     self.org_node_weight_dict[pre_node] += org_node_weight_list
                     node_weight_list = []
                     org_node_weight_list = []
-                    self.bake_node_inf_dict[pre_node] = om.MIntArray() + pre_row_inf_id_list
+                    if MAYA_VER >= 2016:
+                        self.bake_node_inf_dict[pre_node] = om2.MIntArray() + pre_row_inf_id_list
+                    else:
+                        self.bake_node_inf_dict[pre_node] = om.MIntArray() + pre_row_inf_id_list
                 if row == last_row:
                     node_weight_list += new_weight
                     org_node_weight_list += org_weight
                     self.bake_node_weight_dict[node] += node_weight_list
                     self.org_node_weight_dict[node] += org_node_weight_list
-                    self.bake_node_inf_dict[node] = om.MIntArray() + row_inf_id_list
+                    if MAYA_VER >= 2016:
+                        self.bake_node_inf_dict[node] = om2.MIntArray() + row_inf_id_list
+                    else:
+                        self.bake_node_inf_dict[node] = om.MIntArray() + row_inf_id_list
                 node_weight_list += new_weight
                 org_node_weight_list += org_weight
                 #ここはそんなに重くない0.2sec

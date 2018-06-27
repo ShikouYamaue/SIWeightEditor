@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
- 
+from maya import cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 import maya.api.OpenMaya as om2
@@ -11,6 +11,8 @@ kPluginCmdName = "bakeSkinWeight" # MELコマンド名
 kShortFlagName = "-ts"     # 引数のショートネーム
 kLongFlagName = "-test"   # 引数のロングネーム
  
+MAYA_VER = int(cmds.about(v=True)[:4])
+
 def maya_useNewAPI():
     pass
     
@@ -50,20 +52,29 @@ class BakeSkinWeightClass( om2.MPxCommand ):
             infIndices = self.bake_node_inf_dict[node]
             skinFn = self.node_skinFn_dict[node]
             
-            sList = om.MSelectionList()
-            sList.add(node)
             
-            meshDag = om.MDagPath()
-            component = om.MObject()
-            
-            sList.getDagPath(0, meshDag, component)
-            
-            # 指定の頂点をコンポーネントとして取得する
-            singleIdComp = om.MFnSingleIndexedComponent()
-            vertexComp = singleIdComp.create(om.MFn.kMeshVertComponent )
-            singleIdComp.addElements(vtxIndices)
-                        
+            if MAYA_VER >= 2016:
+                sList = om2.MSelectionList()
+                sList.add(node)
+                meshDag, component = sList.getComponent(0)
+                # 指定の頂点をコンポーネントとして取得する
+                singleIdComp = om2.MFnSingleIndexedComponent()
+                vertexComp = singleIdComp.create(om2.MFn.kMeshVertComponent )
+                singleIdComp.addElements(vtxIndices)
+            else:
+                sList = om.MSelectionList()
+                sList.add(node)
+                meshDag = om.MDagPath()
+                component = om.MObject()
+                sList.getDagPath(0, meshDag, component)
+                singleIdComp = om.MFnSingleIndexedComponent()
+                vertexComp = singleIdComp.create(om.MFn.kMeshVertComponent )
+                singleIdComp.addElements(vtxIndices)
+                            
             ##引数（dag_path, MIntArray, MIntArray, MDoubleArray, Normalize, old_weight_undo）
+            #print meshDag, vertexComp , infIndices , weights
+            #print type(infIndices)
+            #print type(vertexComp)
             skinFn.setWeights(meshDag, vertexComp , infIndices , weights, False)
         #アンドゥ用ウェイトデータをアップデートする
         siweighteditor.update_dict(self.redo_node_weight_dict, self.bake_node_id_dict)
@@ -80,21 +91,24 @@ class BakeSkinWeightClass( om2.MPxCommand ):
             infIndices = self.bake_node_inf_dict[node]
             skinFn = self.node_skinFn_dict[node]
             
-            sList = om.MSelectionList()
-            sList.add(node)
-            
-            meshDag = om.MDagPath()
-            component = om.MObject()
-            
-            sList.getDagPath(0, meshDag, component)
-            
-            # 指定の頂点をコンポーネントとして取得する
-            singleIdComp = om.MFnSingleIndexedComponent()
-            vertexComp = singleIdComp.create(om.MFn.kMeshVertComponent )
-            singleIdComp.addElements(vtxIndices)
+            if MAYA_VER >= 2016:
+                sList = om2.MSelectionList()
+                sList.add(node)
+                meshDag, component = sList.getComponent(0)
+                singleIdComp = om2.MFnSingleIndexedComponent()
+                vertexComp = singleIdComp.create(om2.MFn.kMeshVertComponent )
+                singleIdComp.addElements(vtxIndices)
+            else:
+                sList = om.MSelectionList()
+                sList.add(node)
+                meshDag = om.MDagPath()
+                component = om.MObject()
+                sList.getDagPath(0, meshDag, component)
+                singleIdComp = om.MFnSingleIndexedComponent()
+                vertexComp = singleIdComp.create(om.MFn.kMeshVertComponent )
+                singleIdComp.addElements(vtxIndices)
                         
             ##引数（dag_path, MIntArray, MIntArray, MDoubleArray, Normalize, old_weight_undo）
-            ##old_weightは聞かないので保留
             skinFn.setWeights(meshDag, vertexComp , infIndices , weights, False)
         #アンドゥの度に読み込むと重いからどうしよう。
         siweighteditor.refresh_window()
