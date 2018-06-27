@@ -731,6 +731,7 @@ class MainWindow(qt.MainWindow):
     pre_selection_node = []
     def __init__(self, parent = None, init_pos=False):
         super(self.__class__, self).__init__(parent)
+        self.setAttribute(Qt.WA_DeleteOnClose)
         self.init_save()
         self.wdata = self.load_window_data()
         self.setAttribute(Qt.WA_DeleteOnClose)
@@ -2010,8 +2011,8 @@ class MainWindow(qt.MainWindow):
             self.weight_model.deleteLater()
             del self.weight_model
         except Exception as e:
-            pass
             #print e.message, 'in get set'
+            pass
             #print 'faild to delete weight model in remake :'
             
         self.weight_model = TableModel(self._data, self.view_widget, self.mesh_rows, 
@@ -2671,16 +2672,15 @@ class MainWindow(qt.MainWindow):
             select_job = None
             
     def closeEvent(self, e):
-        #print 'window close :'
+        print 'window close :'
         self.remove_job()
         self.save_window_data()
         self.disable_joint_override()
         #ちゃんと消さないと莫大なUIデータがメモリに残り続けるので注意
-        try:
-            self.weight_model.deleteLater()
-            self.sel_model.deleteLater()
-        except:
-            pass
+        self.weight_model.deleteLater()
+        del self.weight_model
+        self.sel_model.deleteLater()
+        del self.sel_model
         self.deleteLater()
         
 #アンドゥ時に辞書を更新しておく。
