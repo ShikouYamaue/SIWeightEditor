@@ -157,7 +157,7 @@ class StoreSkinWeight():
                     evid = meshFn.getEdgeVertices(e)
                     eSet.extend(evid)
                 vids = list(set(eSet))
-                vtxArray = om.MIntArray()
+                vtxArray = om2.MIntArray()
                 [vtxArray.append(id) for id in vids]
             #フェースを頂点IDに変換する
             elif "face" == cmpType:
@@ -168,11 +168,11 @@ class StoreSkinWeight():
                     vid = meshFn.getPolygonVertices(f)
                     fSet.extend(vid)
                 vids = list(set(fSet))
-                vtxArray = om.MIntArray()
+                vtxArray = om2.MIntArray()
                 [vtxArray.append(id) for id in vids]
             else:
                 vids = range(meshFn.numVertices)
-                vtxArray = om.MIntArray()
+                vtxArray = om2.MIntArray()
                 [vtxArray.append(id) for id in vids]
             #print 'get mesh vtx :', vtxArray
             return skinFn, vtxArray, skinName

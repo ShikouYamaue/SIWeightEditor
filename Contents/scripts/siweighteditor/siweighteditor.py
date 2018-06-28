@@ -39,7 +39,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.0.6'
+VERSION = 'r1.0.7'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -54,6 +54,7 @@ WIDGET_HEIGHT = 32
 BUTTON_HEIGHT = 22
 
 #速度計測結果を表示するかどうか
+COUNTER_PRINT = True
 COUNTER_PRINT = False
 
 #GitHub
@@ -2268,18 +2269,22 @@ class MainWindow(qt.MainWindow):
         
         self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
         if not  self.selected_items:
+            #self.from_spinbox = False
             return
         #add_value ボックス入力値
         #after_value 入力後のボックス値
         #n_value 正規化された値をリストに戻すための変数
         self.text_value_list = []
         if not self.change_flag and not from_spinbox:
+            self.from_spinbox = False
             return
         if not self.selected_items:
+            self.from_spinbox = False
             return
         #絶対値モードでフォーカス外したときに0だった時の場合分け
         if from_spinbox and not self.key_pressed and not from_input_box:
             #print 'focus error :'
+            self.from_spinbox = False
             return
         #0-1表示なら割り算省略、ちょっとは早くなる？？
         if MAXIMUM_WEIGHT == 100.0:
@@ -2677,10 +2682,16 @@ class MainWindow(qt.MainWindow):
         self.save_window_data()
         self.disable_joint_override()
         #ちゃんと消さないと莫大なUIデータがメモリに残り続けるので注意
-        self.weight_model.deleteLater()
-        del self.weight_model
-        self.sel_model.deleteLater()
-        del self.sel_model
+        try:
+            self.weight_model.deleteLater()
+            del self.weight_model
+        except:
+            pass
+        try:
+            self.sel_model.deleteLater()
+            del self.sel_model
+        except:
+            pass
         self.deleteLater()
         
 #アンドゥ時に辞書を更新しておく。
