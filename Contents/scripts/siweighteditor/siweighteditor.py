@@ -39,7 +39,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.0.7'
+VERSION = 'r1.0.8'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -2261,6 +2261,8 @@ class MainWindow(qt.MainWindow):
     from_spinbox =False
     #入力値をモードに合わせてセルの値と合算、セルに値を戻す
     def culc_cell_value(self, from_spinbox=False, from_input_box=False):
+        if self.closed_flag:#ウィンドウ閉じた後は何もしない
+            return
         if self.from_spinbox:
             self.from_spinbox = False
             return
@@ -2269,7 +2271,7 @@ class MainWindow(qt.MainWindow):
         
         self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
         if not  self.selected_items:
-            #self.from_spinbox = False
+            self.from_spinbox = False
             return
         #add_value ボックス入力値
         #after_value 入力後のボックス値
@@ -2501,14 +2503,23 @@ class MainWindow(qt.MainWindow):
                     bake_with_norm = True
                     column_list = self.row_column_dict[row]#行のうち選択されているカラムのリスト
                     column_inf_id_list = [node_influence_id_list[i] for i in column_list]#選択カラムに対応するインフルエンスのリスト
+                    
+                    #スライダ中は値が振り切っても戻れるように選択外の値はプレス直後のものを使う
+                    if self.change_flag:
+                        pressed_weight = self.press_start_data[row]
+                        for inf_id in column_inf_id_list:
+                            pressed_weight[inf_id] = new_weight[inf_id]
+                        new_weight = pressed_weight
+                        #print 'use pressed weight :', pressed_weight
+                    
                     select_sum = sum([new_weight[i] for i in column_inf_id_list if i is not None])#選択してるカラムの合計値
                     other_inf_id_list = list(set(row_inf_id_list) - set(column_inf_id_list))
                     other_sum = sum([new_weight[i] for i in other_inf_id_list]) - locked_sum
+                    
                     ##ロックセル以外の合計が0.0の場合は正規化できないので変更前の値にもどす
                     if other_sum + select_sum == 0.0:
                         new_weight = org_weight
                         select_sum = sum([new_weight[i] for i in column_inf_id_list if i is not None])#選択してるカラムの合計値
-                    
                     #選択セルの合計1以上の時のノーマライズ処理
                     if select_sum + locked_sum >= 1.0:
                         for i, w in  enumerate(new_weight):
@@ -2518,6 +2529,7 @@ class MainWindow(qt.MainWindow):
                                 norm_weight.append(w/select_sum*(1.0-locked_sum))
                             else:
                                 norm_weight.append(0.0)
+                                
                     #1より小さい時のノーマライズ処理
                     elif select_sum < 1.0:
                         all_sum = select_sum + locked_sum
@@ -2646,6 +2658,7 @@ class MainWindow(qt.MainWindow):
     def sld_pressed(self):
         cmds.undoInfo(openChunk=True)
         #マウスプレス直後に履歴を残す焼き込みする。実際のベイクはしない。
+        self.press_start_data = copy.deepcopy(self.weight_model._data)
         self.setup_update_row_data()
         self.precalculate_bake_weights(realbake=False, ignoreundo=False)
         self.change_flag = True#スライダー操作中のみ値の変更を許可するフラグ
@@ -2676,8 +2689,10 @@ class MainWindow(qt.MainWindow):
             cmds.scriptJob(k=select_job)
             select_job = None
             
+    closed_flag = False
     def closeEvent(self, e):
         print 'window close :'
+        self.closed_flag=True
         self.remove_job()
         self.save_window_data()
         self.disable_joint_override()
