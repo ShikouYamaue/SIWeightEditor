@@ -1,27 +1,36 @@
 # -*- coding: utf-8 -*-
 from maya import cmds
 from maya import mel
-import pymel.core as pm
-from . import common
-from . import lang
-from . import qt
-import re
-import os
-import locale
-from collections import defaultdict
-from collections import OrderedDict
-import copy
-import time
-import datetime as dt
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 import maya.api.OpenMaya as om2
 import maya.api.OpenMayaAnim as oma2
+import pymel.core as pm
+
+from collections import defaultdict
+from collections import OrderedDict
+import datetime as dt
+import copy
+import time
 import itertools
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
+import re
+import os
+import locale
 import json
 import webbrowser
+
+from . import common
+from . import lang
+from . import qt
+from . import freeze
+from . import weight
+from . import weight_transfer_multiple
+from . import modeling
+from . import symmetrize
+from . import joint_rule_editor
+
 import imp
 try:
     imp.find_module('PySide2')
@@ -39,7 +48,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.0.8'
+VERSION = 'r1.0.9'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -53,6 +62,9 @@ ZERO_CELL_DARKEN = 60
 WIDGET_HEIGHT = 32
 BUTTON_HEIGHT = 22
 
+#トランスファークラスをインスタンス化しておく
+WEIGHT_TRANSFER_MULTIPLE = weight_transfer_multiple.WeightTransferMultiple()
+
 #速度計測結果を表示するかどうか
 COUNTER_PRINT = True
 COUNTER_PRINT = False
@@ -63,13 +75,16 @@ HELP_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/blob/master/README.m
 REREASE_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/releases'
 
 #焼きこみプラグインをロードしておく
-try:
-    check = cmds.pluginInfo('bake_skin_weight.py', query=True, l=True)
-    if not check:
-        cmds.loadPlugin('bake_skin_weight.py', qt=True)
-        cmds.pluginInfo('bake_skin_weight.py', e=True, autoload=True)
-except Exception as e:
-    e.message
+def load_plugin():
+    try:
+        check = cmds.pluginInfo('bake_skin_weight.py', query=True, l=True)
+        if not check:
+            cmds.loadPlugin('bake_skin_weight.py', qt=True)
+            cmds.pluginInfo('bake_skin_weight.py', e=True, autoload=True)
+    except Exception as e:
+        e.message
+    #ツールチップもついでに有効か
+    cmds.help(popupMode=True)
 
 def timer(func):
     #戻す用関数を定義
@@ -104,7 +119,7 @@ class LapCounter():
         out_put_time = '{:.5f}'.format(total_time)
         #ウィンドウに計算時間表示
         try:
-            window.time_label.setText('- Calculation Time - '+out_put_time+' sec')
+            WINDOW.time_label.setText('- Calculation Time - '+out_put_time+' sec')
         except:
             pass
             
@@ -269,7 +284,7 @@ class MyHeaderView(QHeaderView):
         self.sectionDoubleClicked.connect(self.double_clicked_section)
         
     def mouseReleaseEvent(self, e):
-        window.view_widget.mouse_pos = QCursor.pos()
+        WINDOW.view_widget.mouse_pos = QCursor.pos()
         if e.button() == Qt.RightButton:
             self.rightClicked.emit()
         else:
@@ -475,8 +490,8 @@ class TableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             try:
                 #抜けカラムを考慮したインフルエンスIDを取得
-                node = window.vtx_row_dict[row][6]
-                inf_id_list = window.node_influence_id_list_dict[node]
+                node = WINDOW.vtx_row_dict[row][6]
+                inf_id_list = WINDOW.node_influence_id_list_dict[node]
                 local_column = inf_id_list[column]
                 weight = self._data[row][local_column]*MAXIMUM_WEIGHT
                 #指定桁数にまとめる、formatで自動的に桁数そろえてくれるみたい
@@ -494,8 +509,8 @@ class TableModel(QAbstractTableModel):
             zero_flag = False
             color = [210]*3
             try:
-                node = window.vtx_row_dict[row][6]
-                inf_id_list = window.node_influence_id_list_dict[node]
+                node = WINDOW.vtx_row_dict[row][6]
+                inf_id_list = WINDOW.node_influence_id_list_dict[node]
                 local_column = inf_id_list[column]
                 weight = self._data[row][local_column]*MAXIMUM_WEIGHT
                 if weight == 0.0:
@@ -528,8 +543,8 @@ class TableModel(QAbstractTableModel):
             if index:
                 row = index.row()
                 column = index.column()
-            node = window.vtx_row_dict[row][6]
-            inf_id_list = window.node_influence_id_list_dict[node]
+            node = WINDOW.vtx_row_dict[row][6]
+            inf_id_list = WINDOW.node_influence_id_list_dict[node]
             local_column = inf_id_list[column]
             value  = self._data[row][local_column]
         except Exception as e:
@@ -550,8 +565,8 @@ class TableModel(QAbstractTableModel):
             column = index[1]
         if role == Qt.EditRole and value != "":
             #抜けカラムを考慮したインフルエンスIDを取得
-            node = window.vtx_row_dict[row][6]
-            inf_id_list = window.node_influence_id_list_dict[node]
+            node = WINDOW.vtx_row_dict[row][6]
+            inf_id_list = WINDOW.node_influence_id_list_dict[node]
             local_column = inf_id_list[column]#空白セルを考慮したローカルカラム取得
             
             self._data[row][local_column] = value
@@ -565,8 +580,8 @@ class TableModel(QAbstractTableModel):
         row = index.row()
         column = index.column()
         try:
-            node = window.vtx_row_dict[row][6]
-            inf_id_list = window.node_influence_id_list_dict[node]
+            node = WINDOW.vtx_row_dict[row][6]
+            inf_id_list = WINDOW.node_influence_id_list_dict[node]
             local_column = inf_id_list[column]
             value = self._data[row][local_column]
         except:
@@ -603,17 +618,17 @@ def model_iter(model, parent_index=QModelIndex(), col_iter=True):
             
 class Option():
     def __init__(self):
-        global window
+        global WINDOW
         try:
-            window.closeEvent(None)
-            window.close()
+            WINDOW.closeEvent(None)
+            WINDOW.close()
         except Exception as e:
             print e.message
-        window = MainWindow()
-        window.init_flag=False
-        window.resize(window.sw, window.sh)
-        window.move(window.pw-8, window.ph-31)
-        window.show()
+        WINDOW = MainWindow()
+        WINDOW.init_flag=False
+        WINDOW.resize(WINDOW.sw, WINDOW.sh)
+        WINDOW.move(WINDOW.pw-8, WINDOW.ph-31)
+        WINDOW.show()
         
 class MainWindow(qt.MainWindow):
     selection_mode = 'tree'
@@ -732,6 +747,7 @@ class MainWindow(qt.MainWindow):
     pre_selection_node = []
     def __init__(self, parent = None, init_pos=False):
         super(self.__class__, self).__init__(parent)
+        load_plugin()#プラグインロード
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.init_save()
         self.wdata = self.load_window_data()
@@ -1106,6 +1122,167 @@ class MainWindow(qt.MainWindow):
         sel_joint_layout.addWidget(self.t_but)
         sel_joint_layout.addWidget(self.joint_hl_but)
         
+        
+        #-----------------------------------------------------------------------------------------------------
+        #サブツール群を配置
+        sub_tool_widget = QWidget()
+        sub_tool_widget.setGeometry(QRect(0, 0, 0 ,0))
+        sub_tool_layout = QHBoxLayout()
+        sub_tool_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        sub_tool_widget.setLayout(sub_tool_layout)
+        if MAYA_VER >= 2016:
+            size = 332
+        else:
+            size = 310
+        sub_tool_widget.setMinimumWidth(size)
+        sub_tool_widget.setMaximumWidth(size)
+        sub_tool_widget.setMaximumHeight(WIDGET_HEIGHT)
+        
+        #サブツール類のレイアウト
+        #label = QLabel('Sub Tools :')
+        #sub_tool_layout.addWidget(label)
+        
+        #ウェイトハンマー
+        tip = lang.Lang(en='*Weight Hummer\n\nExecute a weight hammer at the vertex of the selected cell', 
+                            ja=u'・Weight Hummer\n\n選択セルの頂点にウェイトハンマーを実行する').output()
+        self.hummer_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'hummer.png', tip=tip)
+        self.hummer_but.clicked.connect(self.hummer_weight)
+        sub_tool_layout.addWidget(self.hummer_but)
+        
+        sub_tool_layout.addWidget(QLabel('  '))
+        
+        #フリーズ
+        tip = lang.Lang(en='*Freeze\n\nDelete all history and write back deformer cluster and blend shape\nEasy history cleanup function', 
+                            ja=u'・Freeze\n\nヒストリを全削除したあとデフォーマクラスタとブレンドシェイプを書き戻します\nヒストリの簡単クリーンアップ機能').output()
+        self.freeze_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'freeze.png', tip=tip)
+        self.freeze_but.clicked.connect(qt.Callback(self.freeze))
+        sub_tool_layout.addWidget(self.freeze_but)
+        
+        #フリーズM
+        tip = lang.Lang(en='*Freeze_M\n\nAfter deleting all history, write back skin weight, deformer cluster, blend shape \n'+\
+                                'Function to clean up history while keeping skinning \n'+\
+                                'You can also bake lattice while skinning', 
+                            ja=u'・Freeze_M\n\nヒストリを全削除したあと、スキンウェイト、デフォーマクラスタ、ブレンドシェイプを書き戻します\n'+\
+                                u'スキニングを保持したままヒストリをきれいにする機能\n'+\
+                                u'スキニングしたままラティスをベイクしたりもできます').output()
+        self.freeze_m_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'freeze_m.png', tip=tip)
+        self.freeze_m_but.clicked.connect(qt.Callback(self.freeze_m))
+        sub_tool_layout.addWidget(self.freeze_m_but)
+        
+        sub_tool_layout.addWidget(QLabel('  '))
+       
+        #ウェイトコピー
+        tip = lang.Lang(en='*Simple_Weight_Copy\n\nCopy the mesh weight \nWrite it out externally as a temporary file', 
+                            ja=u'・Simple_Weight_Copy\n\nメッシュのウェイトをコピーします\n一時ファイルとして外部に書き出し').output()
+        self.simple_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'simple_copy.png', tip=tip)
+        self.simple_copy_but.clicked.connect(qt.Callback(self.weight_copy))
+        sub_tool_layout.addWidget(self.simple_copy_but)
+
+        #ウェイトペースト
+        tip = lang.Lang(en='*Simple_Weight_Paste(Name / Index)\n\nPaste the weight of the mesh from the copy information \nWrite back with mesh name and vertex number', 
+                            ja=u'・Simple_Weight_Paste(Name / Index)\n\nメッシュのウェイトをコピー情報からペーストします\nメッシュ名と頂点番号で書き戻し').output()
+        self.simple_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'simple_topology.png', tip=tip)
+        self.simple_paste_but.clicked.connect(qt.Callback(self.weight_paste))
+        sub_tool_layout.addWidget(self.simple_paste_but)
+        
+        #ウェイトペーストポジション
+        if MAYA_VER >= 2016:#Maya2016以上はNearestが使える
+            tip = lang.Lang(en='*Simple_Weight_Paste(Name / Position)\n\nPaste the weight of mesh from copy information \nWrite back in mesh name and neighborhood coordinates of vertex', 
+                                ja=u'・Simple_Weight_Paste(Name / Position)\n\nメッシュのウェイトをコピー情報からペーストします\nメッシュ名と頂点の近傍座標で書き戻し').output()
+            self.simple_paste_position_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                        flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'simple_position.png', tip=tip)
+            self.simple_paste_position_but.clicked.connect(qt.Callback(lambda : self.weight_paste(method='nearest', threshold=2.0)))
+            sub_tool_layout.addWidget(self.simple_paste_position_but)
+        
+        sub_tool_layout.addWidget(QLabel('  '))
+        
+        #ウェイトトランスファー
+        tip = lang.Lang(en='*Transfer_Weight_Muliple / Copy\n\nWeight Specify the transfer source mesh \nMultiple meshes can be specified', 
+                            ja=u'・Transfer_Weight_Muliple / Copy\n\nウェイト転送元のメッシュを指定します\n複数メッシュ指定可能').output()
+        self.transfer_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'transfer_copy.png', tip=tip)
+        self.transfer_copy_but.clicked.connect(qt.Callback(self.weight_transfer_copy))
+        sub_tool_layout.addWidget(self.transfer_copy_but)
+        
+        #ウェイトトランスファー
+        tip = lang.Lang(en='*Transfer_Weight_Muliple / Transfer\n\nWait transfer source Weight is transferred from the specified mesh to the selected mesh \nMultiple mesh can be specified', 
+                            ja=u'・Transfer_Weight_Muliple / Transfer\n\nウェイト転送元指定したメッシュから選択メッシュにウェイトを転送します\n複数メッシュ指定可能').output()
+        self.transfer_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'transfer_paste.png', tip=tip)
+        self.transfer_paste_but.clicked.connect(qt.Callback(self.weight_transfer_paste))
+        sub_tool_layout.addWidget(self.transfer_paste_but)
+        
+        sub_tool_layout.addWidget(QLabel('  '))
+        
+        #ウェイトシンメトリ
+        tip = lang.Lang(en='*Weight_Symmetrize\n\n'+\
+                            'Mirror weights of selected objects and components\n'+\
+                            'Joint label is automatically generated from setting\n\n'+\
+                            'Right click to open label setting rule editor', 
+                            ja=u'・Weight_Symmetrize\n\n'+\
+                            u'選択したオブジェクト、コンポーネントのウェイトをミラーリングします\n'+\
+                            u'ジョイントラベルは設定から自動生成されます\n\n'+\
+                            u'右クリックでラベル設定ルールエディタを開きます').output()
+        self.sym_weight_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'sym_weight.png', tip=tip)
+        self.sym_weight_but.clicked.connect(qt.Callback(symmetrize.WeightSymmetrize))
+        self.sym_weight_but.rightClicked.connect(self.open_joint_rule_editor)
+        sub_tool_layout.addWidget(self.sym_weight_but)
+        
+        #メッシュとウェイトをセットでシンメトリ
+        tip = lang.Lang(en='*Auto_Symmetry\n\n'+\
+                            'Copy selected objects in reverse\n'+\
+                            'In case of skin meshes, we also mirror the weight automatically\n\n'+\
+                            'Right click to open label setting rule editor', 
+                            ja=u'・Auto_Symmetry\n\n'+\
+                            u'選択オブジェクトを反転コピー\n'+\
+                            u'スキンメッシュの場合はウェイトも自動でミラーリングします\n\n'+\
+                            u'右クリックでラベル設定ルールエディタを開きます').output()
+        self.auto_symmetry_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'auto_symmetry.png', tip=tip)
+        self.auto_symmetry_but.clicked.connect(qt.Callback(symmetrize.mesh_weight_symmetrize))
+        self.auto_symmetry_but.rightClicked.connect(self.open_joint_rule_editor)
+        sub_tool_layout.addWidget(self.auto_symmetry_but)
+        
+        #メッシュマージ
+        tip = lang.Lang(en='*Mesh Marge with Skinning\n\n'+\
+                            'Conbine the selected mesh with keeping skinning\n'+\
+                            'With standard functions, data can not be broken or can not be undone , so original implementation\n\n'+\
+                            'It is convenient to merge after Auto Symmetry', 
+                            ja=u'・Mesh Marge with Skinning\n\n'+\
+                            u'選択メッシュをスキニングを保持したまま結合します\n'+\
+                            u'標準機能ではデータが壊れたりアンドゥできない（Mayaごと落ちる）ことが多いので独自実装\n\n'+\
+                            u'Auto Symmetry後にマージしたりとか便利です').output()
+        self.marge_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'marge.png', tip=tip)
+        self.marge_but.clicked.connect(qt.Callback(lambda : modeling.MeshMarge().main(cmds.ls(sl=True, l=True))))
+        sub_tool_layout.addWidget(self.marge_but)
+        
+        sub_tool_layout.addWidget(QLabel('  '))
+        
+        #ウェイトのミュート
+        tip = lang.Lang(en='*Toggle_Mute_Skinning \n\nToggle the muting state of the selected mesh skinning \n If you do not select anything, apply it to all skin meshes', 
+                            ja=u'・Toggle_Mute_Skinning \n\n選択メッシュのスキニングのミュート状態をトグル\n何も選択せずに実行すると全てのスキンメッシュに適用').output()
+        self.toggle_mute_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'mute.png', tip=tip)
+        self.toggle_mute_but.clicked.connect(weight.toggle_mute_skinning)
+        sub_tool_layout.addWidget(self.toggle_mute_but)
+        
+        #バインドポーズ
+        tip = lang.Lang(en='*Go_to_Bind_Pose \n\nReturn to bind pose', 
+                            ja=u'・Go_to_Bind_Pose \n\nバインドポーズにもどります').output()
+        self.bind_pose_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'bind_pose.png', tip=tip)
+        self.bind_pose_but.clicked.connect(lambda : mel.eval('gotoBindPose;'))
+        sub_tool_layout.addWidget(self.bind_pose_but)
+        
+        #sub_tool_layout.addStretch(0)
+        
         #ボタン軍の並びを一括設定
         self.but_list.append(show_widget)
         self.but_list.append(sel_joint_widget)
@@ -1115,12 +1292,15 @@ class MainWindow(qt.MainWindow):
         self.but_list.append(decimal_widget)
         self.but_list.append(lock_widget)
         self.but_list.append(mode_widget)
+        self.but_list.append(sub_tool_widget)
         
         self.set_column_stretch()#ボタン間隔が伸びないようにする
         #self.init_but_width_list(but_list=self.but_list)#配置実行
         
         self.main_layout.addWidget(qt.make_h_line())
         
+        #---------------------------------------------------------------------------------------------------
+                
         #スライダー作成
         sld_layout = QHBoxLayout()
         self.main_layout.addLayout(sld_layout)
@@ -1146,68 +1326,65 @@ class MainWindow(qt.MainWindow):
         self.weight_input_sld.valueChanged.connect(lambda : self.culc_cell_value(from_spinbox=False))
         self.weight_input_sld.sliderReleased.connect(self.sld_released)
         
+        tip = lang.Lang(en='Clear cell selection and spin box value', 
+                            ja=u'セル選択とスピンボックスの値をクリア').output()
+        self.clear_search_but = qt.make_flat_btton(name='C', bg=self.hilite, border_col=180, w_max=18, w_min=18, h_max=18, h_min=18, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, icon=None, tip=tip)
+        self.clear_search_but.clicked.connect(self.clear_selection)
+        sld_layout.addWidget(self.clear_search_but)
+        
         self.main_layout.addWidget(qt.make_h_line())
         
-        #サブツール群を配置
-        sub_tool_layout = QHBoxLayout()
-        self.main_layout.addLayout(sub_tool_layout)
-        sub_tool_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        #-------------------------------------------------------------------------------------------
+        seach_layout = QHBoxLayout()
+        self.main_layout.addLayout(seach_layout)
         
-        
-        '''
-        tip = lang.Lang(en='Do not initialize the weight table when cancellation of selection', 
-                                ja=u'選択解除時にウェイトテーブルを初期化しない').output()
-        self.no_sel_lock_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
-                                                    flat=True, hover=True, checkable=True, destroy_flag=False, icon=self.icon_path+'sel_lock.png', tip=tip)
-        self.no_sel_lock_but.setChecked(self.no_sel_lock)
-        sub_tool_layout.addWidget(self.no_sel_lock_but)
-        '''
-        #サブツール類のレイアウト
-        sub_tool_layout.addWidget(QLabel(' '))
-        
-        tip = lang.Lang(en='Execute a weight hammer at the vertex of the selected cell', ja=u'選択セルの頂点にウェイトハンマーを実行する').output()
-        self.hummer_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
-                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'hummer.png', tip=tip)
-        self.hummer_but.clicked.connect(self.hummer_weight)
-        sub_tool_layout.addWidget(self.hummer_but)
-        
-        sub_tool_layout.addWidget(QLabel(' '))
-        sub_tool_layout.addWidget(qt.make_v_line())
-        
-        label = QLabel(' Search: ')
-        sub_tool_layout.addWidget(label)
+        label = QLabel('Search: ')
+        seach_layout.addWidget(label)
+        seach_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         
         self.search_but_group = QButtonGroup()
         tip = lang.Lang(en='Refine search by specified character string', 
                             ja=u'指定文字列で絞り込み検索').output()
-        self.refine_but = qt.make_flat_btton(name='Refine', bg=self.hilite, border_col=180, w_max=45, w_min=45, h_max=20, h_min=20, 
+        self.refine_but = qt.make_flat_btton(name='Refine', bg=self.hilite, border_col=180, w_max=45, w_min=45, h_max=18, h_min=18, 
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
         tip = lang.Lang(en='Add the joint containing the specified character string to the current display', 
                             ja=u'指定文字列を含むジョイントを現在の表示に加える').output()
-        self.add_but = qt.make_flat_btton(name='Add', bg=self.hilite, border_col=180, w_max=35, w_min=35, h_max=20, h_min=20, 
+        self.add_but = qt.make_flat_btton(name='Add', bg=self.hilite, border_col=180, w_max=35, w_min=35, h_max=18, h_min=18, 
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
         self.search_but_group.addButton(self.refine_but , 0)
         self.search_but_group.addButton(self.add_but , 1)
         self.search_but_group.button(self.search_mode).setChecked(True)
         self.search_but_group.buttonClicked.connect(lambda : self.get_set_skin_weight())
-        sub_tool_layout.addWidget(self.refine_but)
-        sub_tool_layout.addWidget(self.add_but)
+        seach_layout.addWidget(self.refine_but)
+        seach_layout.addWidget(self.add_but)
         
-        sub_tool_layout.addWidget(QLabel(' '))
+        seach_layout.addWidget(QLabel(' '))
+        
+        tip = lang.Lang(en='Clear Search Window', 
+                            ja=u'検索窓をクリア').output()
+        self.clear_search_but = qt.make_flat_btton(name='C', bg=self.hilite, border_col=180, w_max=18, w_min=18, h_max=18, h_min=18, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, icon=None, tip=tip)
+        self.clear_search_but.clicked.connect(self.clear_search)
+        seach_layout.addWidget(self.clear_search_but)
+        
+        seach_layout.addWidget(QLabel(' '))
         
         self.search_line = qt.LineEdit()
         self.search_line.editingFinished.connect(lambda : self.search_joint(as_interractive=False))
         self.search_line.textChanged.connect(lambda : self.search_joint(as_interractive=True))
-        sub_tool_layout.addWidget(self.search_line)
+        seach_layout.addWidget(self.search_line)
         
-        sub_tool_layout.addWidget(QLabel(' '))
+        seach_layout.addWidget(QLabel(' '))
         
         tip = lang.Lang(en='Interactive search', 
                             ja=u'インタラクティブ検索').output()
         self.interactive_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=18, w_min=18, h_max=18, h_min=18, 
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, icon=self.icon_path+'i.png', tip=tip)
-        sub_tool_layout.addWidget(self.interactive_but)
+        seach_layout.addWidget(self.interactive_but)
         self.interactive_but.setChecked(self.interactive)
+        
+        #----------------------------------------------------------------------------------------------------
         
         #HorizontalHeaderを縦書きにするカスタムクラス
         headerView = MyHeaderView()
@@ -1225,6 +1402,7 @@ class MainWindow(qt.MainWindow):
         self.view_widget.keyPressed .connect(self.direct_cell_input)
         self.main_layout.addWidget(self.view_widget)
         
+        #--------------------------------------------------------------------------------------------
         msg_layout = QHBoxLayout()
         
         tip = lang.Lang(en='Set the brightness of the cell character whose value is zero', 
@@ -1248,14 +1426,14 @@ class MainWindow(qt.MainWindow):
         
         msg_layout.addWidget(qt.make_v_line())
         
-        tip = lang.Lang(en='Display help page', ja=u'ヘルプページの表示').output()
+        tip = lang.Lang(en='Show latest release page', ja=u'最新リリースページを表示').output()
         self.release_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'release.png', tip=tip)
         
+        tip = lang.Lang(en='Display help page', ja=u'ヘルプページの表示').output()
         self.release_but.clicked.connect(lambda : webbrowser.open(REREASE_PATH))
         msg_layout.addWidget(self.release_but)
         
-        tip = lang.Lang(en='Show latest release page', ja=u'最新リリースページを表示').output()
         self.help_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'help.png', tip=tip)
         
@@ -1285,64 +1463,48 @@ class MainWindow(qt.MainWindow):
         self.change_decimal_digits()
         self.zero_cell_darken()
         
+    def open_joint_rule_editor(self):
+        joint_rule_editor.Option()
         
-    numeric_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.']
-    def direct_cell_input(self, string):
-        if string in self.numeric_list:
-            self.view_widget.ignore_key_input = True#一時的にテーブルへのキー入力無効
-            #index = self.sel_model.currentIndex()
-            #self.view_widget.edit(index)
-            #pos = self.view_widget.mouse_pos#出現位置のコントロールが微妙なので中止
-            self.input_box = PopInputBox(value=string, 
-                                                            mode=self.mode_but_group.checkedId(),
-                                                            direct=True)
-            self.input_box.closed.connect(lambda : self.apply_input_box_value(direct=True))
-        
-    #ゼロセルの文字の色を変える
-    def zero_cell_darken(self):
-        global ZERO_CELL_DARKEN
-        ZERO_CELL_DARKEN = 210 - self.zero_darken.value()
-        self.refresh_table_view()
+    #サブツールコマンド群-----------------------------------------------------------
+    def freeze(self):
+        freeze.freeze()
     
-    #お知らせをUIに表示する
-    def set_message(self, msg='', error=True):
-        self.msg_label.setText(msg)
-        if error:
-            qt.change_button_color(self.msg_label, textColor=[230, 230, 64])
-        else:
-            qt.change_button_color(self.msg_label, textColor=200)
-            
-    #お知らせを消す
-    def reset_message(self):
-        self.msg_label.setText('')
+    def freeze_m(self):
+        freeze.main(pop_zero_poly=True)
+    
+    def weight_copy(self, method='index', engin='maya', saveName='siweighteditor.copypaste'):
+        selection = cmds.ls(sl=True)
+        skin_meshes = common.search_polygon_mesh(selection, serchChildeNode=True)
+        if skin_meshes is not None:
+            weight.WeightCopyPaste().main(skin_meshes, 
+                                            mode = 'copy', 
+                                            saveName = saveName, 
+                                            engine = engin,
+                                            viewmsg = True)
+                                                
+    def weight_paste(self, method='index', threshold=0.2, engin='maya', saveName='siweighteditor.copypaste'):
+        selection = cmds.ls(sl=True)
+        skin_meshes = common.search_polygon_mesh(selection, serchChildeNode=True)
+        if skin_meshes is not None:
+            weight.WeightCopyPaste().main(skin_meshes, 
+                                            mode = 'paste', 
+                                            saveName = saveName, 
+                                            method = method, 
+                                            threshold = threshold,
+                                            engine = engin,
+                                            viewmsg = True)
+                                            
+    def weight_transfer_copy(self):
+        msg = WEIGHT_TRANSFER_MULTIPLE.stock_copy_mesh()
+        print msg
+        self.set_message(msg=msg, error=False)
         
-    search_joint_list = []
-    def search_joint(self, as_interractive=False):
-        if not self.interactive_but.isChecked() and as_interractive:
-            return
-        if self.interactive_but.isChecked() and not as_interractive:
-            return
-        if len(self.search_line.text()) == 0:
-            self.search_joint_list = []
-        else:
-            self.search_joint_list = self.search_line.text().split(' ')
-            self.search_joint_list  = [name for name in self.search_joint_list if name != '']
-        self.get_set_skin_weight()
+    def weight_transfer_paste(self):
+        msg = WEIGHT_TRANSFER_MULTIPLE.transfer_weight_multiple()
         
-    #エンフォース、ラウンド、ノーマライズなど強制焼きこみの時は事前に行データを設定する
-    def setup_update_row_data(self):
-        self.update_rows = set()
-        if not  self.selected_items:
-            self.update_rows = self.all_editable_rows
-        else:
-            for cell_id in self.selected_items:
-                row = cell_id.row()
-                self.update_rows.add(row)
-        self.row_column_dict = {}
-        #行に対するカラムの選択はないことにする
-        for row in self.update_rows:
-            self.row_column_dict[row] = []
-            
+        cmds.scriptJob(ro=True, e=("idle", lambda : self.set_message(msg=msg, error=False)), protected=True)
+        
     #ウェイトハンマーの実行、後でちゃんとする
     def hummer_weight(self):
         current_selection = cmds.ls(sl=True, l=True)
@@ -1364,7 +1526,69 @@ class MainWindow(qt.MainWindow):
         cmds.undoInfo(swf=True)
         
         self.get_set_skin_weight(node_vtx_dict=self.node_vtx_dict)
+    
+    #-----------------------------------------------------------
+    def clear_selection(self):
+        self.sel_model.clearSelection()
+        self.weight_input.setValue(0.0)
+    
+    numeric_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.']
+    def direct_cell_input(self, string):
+        if string in self.numeric_list:
+            self.view_widget.ignore_key_input = True#一時的にテーブルへのキー入力無効
+            self.input_box = PopInputBox(value=string, 
+                                                            mode=self.mode_but_group.checkedId(),
+                                                            direct=True)
+            self.input_box.closed.connect(lambda : self.apply_input_box_value(direct=True))
+        
+    #ゼロセルの文字の色を変える
+    def zero_cell_darken(self):
+        global ZERO_CELL_DARKEN
+        ZERO_CELL_DARKEN = 210 - self.zero_darken.value()
+        self.refresh_table_view()
+    
+    #お知らせをUIに表示する
+    def set_message(self, msg='', error=True):
+        self.msg_label.setText(msg)
+        if error:
+            qt.change_button_color(self.msg_label, textColor=[250, 128, 64])
+        else:
+            qt.change_button_color(self.msg_label, textColor=200)
             
+    #お知らせを消す
+    def reset_message(self):
+        self.msg_label.setText('')
+        
+    search_joint_list = []
+    def search_joint(self, as_interractive=False):
+        if not self.interactive_but.isChecked() and as_interractive:
+            return
+        if self.interactive_but.isChecked() and not as_interractive:
+            return
+        if len(self.search_line.text()) == 0:
+            self.search_joint_list = []
+        else:
+            self.search_joint_list = self.search_line.text().split(' ')
+            self.search_joint_list  = [name for name in self.search_joint_list if name != '']
+        self.get_set_skin_weight()
+        
+    def clear_search(self):
+        self.search_line.setText('')
+        self.get_set_skin_weight()
+        
+    #エンフォース、ラウンド、ノーマライズなど強制焼きこみの時は事前に行データを設定する
+    def setup_update_row_data(self):
+        self.update_rows = set()
+        if not  self.selected_items:
+            self.update_rows = self.all_editable_rows
+        else:
+            for cell_id in self.selected_items:
+                row = cell_id.row()
+                self.update_rows.add(row)
+        self.row_column_dict = {}
+        #行に対するカラムの選択はないことにする
+        for row in self.update_rows:
+            self.row_column_dict[row] = []
             
     #エンフォースリミットと強制ノーマライズ実行
     def enforce_limit_and_normalize(self, force_norm=False):
@@ -2252,6 +2476,7 @@ class MainWindow(qt.MainWindow):
         
             
     #スピンボックスがフォーカス持ってからきーが押されたかどうかを格納しておく
+    key_pressed = None
     def store_keypress(self, pressed):
         self.key_pressed = pressed
         
@@ -2627,7 +2852,18 @@ class MainWindow(qt.MainWindow):
         try:
             self.om_bake_skin_weight(realbake=True, ignoreundo=self.change_flag)
         except Exception as e:
-            print 'Bake Skin Weight Failure :', e.message
+            try:
+                print 'Bake Skin Weight Failure :', e.message
+                #プラグインをリロードしてリトライする
+                cmds.loadPlugin('bake_skin_weight.py', qt=True)
+                cmds.pluginInfo('bake_skin_weight.py', e=True, autoload=True)
+                self.om_bake_skin_weight(realbake=True, ignoreundo=self.change_flag)
+            except:
+                #ダメだったら通知
+                msg = lang.Lang(en='Failed to write weights. Please check the plugin manager\nbake_skin_weight.py',
+                                        ja='書き込みに失敗しました。プラグインマネージャを確認してください\nbake_skin_weight.py').output()
+                self.set_message(msg=msg, error=True)
+                
         self.counter.count(string='Bake Skin Weight :')
         #最後に表示状態の更新
         self.refresh_table_view()
@@ -2713,19 +2949,19 @@ class MainWindow(qt.MainWindow):
 def update_dict(node_weight_dict, node_id_dict):
     for node, new_weight_list in node_weight_dict.items():
         node_v_id_list = node_id_dict[node]#ノードごとの選択頂点リスト
-        org_weight_list = window.node_weight_dict[node]#元のウェイトリストを引く
+        org_weight_list = WINDOW.node_weight_dict[node]#元のウェイトリストを引く
         for vid, new_weight in zip(node_v_id_list, new_weight_list):#頂点番号ループ
-            window.node_weight_dict[node][vid] = new_weight#指定頂点のウェイトリストを置き換え
+            WINDOW.node_weight_dict[node][vid] = new_weight#指定頂点のウェイトリストを置き換え
             
 def reverse_dict(node_weight_dict, node_id_dict):
     for node, old_weight_list in node_weight_dict.items():
-        window.node_weight_dict[node] = old_weight_list#元のウェイトリストを引く
+        WINDOW.node_weight_dict[node] = old_weight_list#元のウェイトリストを引く
     
 #アンドゥの時に読み直す
 def refresh_window():
-    global window
-    window.get_set_skin_weight(undo=True)
-    window.weight_input.setValue(0.0)#値を設定
+    global WINDOW
+    WINDOW.get_set_skin_weight(undo=True)
+    WINDOW.weight_input.setValue(0.0)#値を設定
         
 #焼き込みコマンドに渡すためにグローバルに要素を展開
 def set_current_data(node_id, node_weight, node_inf, node_skin, undo_node_dict, redo_node_dict, org_node_dict):

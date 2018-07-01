@@ -52,7 +52,6 @@ class BakeSkinWeightClass( om2.MPxCommand ):
             infIndices = self.bake_node_inf_dict[node]
             skinFn = self.node_skinFn_dict[node]
             
-            
             if MAYA_VER >= 2016:
                 sList = om2.MSelectionList()
                 sList.add(node)

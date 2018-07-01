@@ -16,8 +16,6 @@ try:
 except ImportError:
     import shiboken
     
-maya_window = shiboken.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
-    
 maya_ver = int(cmds.about(v=True)[:4])
 maya_api_ver = int(cmds.about(api=True))
 

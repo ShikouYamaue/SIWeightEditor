@@ -44,7 +44,7 @@ class StoreSkinWeight():
                 continue
             
             #print 'get current vtx :', node, mesh_path_name
-            skinFn, vtxArray, skinName = self.adust_to_vertex_list(meshDag, component)
+            skinFn, vtxArray, skinName = self.adust_to_vertex_list(meshDag, component, force=True)
             #print 'get vtx array :', vtxArray
             vtxArrays += vtxArray
             #return vtxArray
@@ -118,17 +118,18 @@ class StoreSkinWeight():
                 continue
             self.dag_skin_id_dict[meshDag] = [skinFn, vtxArray, skinName]
             
-    def adust_to_vertex_list(self, meshDag, component):
+    def adust_to_vertex_list(self, meshDag, component, force=False):
             
             skinFn, skinName = self.om_get_skin_cluster(meshDag)
-            if not skinFn or not skinName:
-                #iter.next()
-                return None, None, None
-            #print 'get skin node :', skinFn, skinName
-            
-            if not meshDag.hasFn(om. MFn.kMesh) or skinName == '' : #メッシュ持ってるかどうか
-                #iter.next()
-                return None, None, None
+            if not force:
+                if not skinFn or not skinName:
+                    #iter.next()
+                    return None, None, None
+                #print 'get skin node :', skinFn, skinName
+                
+                if not meshDag.hasFn(om. MFn.kMesh) or skinName == '' : #メッシュ持ってるかどうか
+                    #iter.next()
+                    return None, None, None
             selId = {}
             cmpType = None
             
