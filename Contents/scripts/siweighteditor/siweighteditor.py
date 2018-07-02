@@ -30,6 +30,7 @@ from . import weight_transfer_multiple
 from . import modeling
 from . import symmetrize
 from . import joint_rule_editor
+from . import go
 
 import imp
 try:
@@ -48,7 +49,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.0.9'
+VERSION = 'r1.1.0'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -1131,9 +1132,9 @@ class MainWindow(qt.MainWindow):
         sub_tool_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool_widget.setLayout(sub_tool_layout)
         if MAYA_VER >= 2016:
-            size = 332
+            size = 212
         else:
-            size = 310
+            size = 190
         sub_tool_widget.setMinimumWidth(size)
         sub_tool_widget.setMaximumWidth(size)
         sub_tool_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1217,8 +1218,17 @@ class MainWindow(qt.MainWindow):
         self.transfer_paste_but.clicked.connect(qt.Callback(self.weight_transfer_paste))
         sub_tool_layout.addWidget(self.transfer_paste_but)
         
-        sub_tool_layout.addWidget(QLabel('  '))
-        
+        #-----------------------------------------------------------------------------------------------------
+        #サブツール群を配置
+        sub_tool2_widget = QWidget()
+        sub_tool2_widget.setGeometry(QRect(0, 0, 0 ,0))
+        sub_tool2_layout = QHBoxLayout()
+        sub_tool2_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        sub_tool2_widget.setLayout(sub_tool2_layout)
+        size = 180
+        sub_tool2_widget.setMinimumWidth(size)
+        sub_tool2_widget.setMaximumWidth(size)
+        sub_tool2_widget.setMaximumHeight(WIDGET_HEIGHT)
         #ウェイトシンメトリ
         tip = lang.Lang(en='*Weight_Symmetrize\n\n'+\
                             'Mirror weights of selected objects and components\n'+\
@@ -1232,7 +1242,7 @@ class MainWindow(qt.MainWindow):
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'sym_weight.png', tip=tip)
         self.sym_weight_but.clicked.connect(qt.Callback(symmetrize.WeightSymmetrize))
         self.sym_weight_but.rightClicked.connect(self.open_joint_rule_editor)
-        sub_tool_layout.addWidget(self.sym_weight_but)
+        sub_tool2_layout.addWidget(self.sym_weight_but)
         
         #メッシュとウェイトをセットでシンメトリ
         tip = lang.Lang(en='*Auto_Symmetry\n\n'+\
@@ -1247,7 +1257,7 @@ class MainWindow(qt.MainWindow):
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'auto_symmetry.png', tip=tip)
         self.auto_symmetry_but.clicked.connect(qt.Callback(symmetrize.mesh_weight_symmetrize))
         self.auto_symmetry_but.rightClicked.connect(self.open_joint_rule_editor)
-        sub_tool_layout.addWidget(self.auto_symmetry_but)
+        sub_tool2_layout.addWidget(self.auto_symmetry_but)
         
         #メッシュマージ
         tip = lang.Lang(en='*Mesh Marge with Skinning\n\n'+\
@@ -1261,9 +1271,9 @@ class MainWindow(qt.MainWindow):
         self.marge_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'marge.png', tip=tip)
         self.marge_but.clicked.connect(qt.Callback(lambda : modeling.MeshMarge().main(cmds.ls(sl=True, l=True))))
-        sub_tool_layout.addWidget(self.marge_but)
+        sub_tool2_layout.addWidget(self.marge_but)
         
-        sub_tool_layout.addWidget(QLabel('  '))
+        sub_tool2_layout.addWidget(QLabel('  '))
         
         #ウェイトのミュート
         tip = lang.Lang(en='*Toggle_Mute_Skinning \n\nToggle the muting state of the selected mesh skinning \n If you do not select anything, apply it to all skin meshes', 
@@ -1271,7 +1281,7 @@ class MainWindow(qt.MainWindow):
         self.toggle_mute_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'mute.png', tip=tip)
         self.toggle_mute_but.clicked.connect(weight.toggle_mute_skinning)
-        sub_tool_layout.addWidget(self.toggle_mute_but)
+        sub_tool2_layout.addWidget(self.toggle_mute_but)
         
         #バインドポーズ
         tip = lang.Lang(en='*Go_to_Bind_Pose \n\nReturn to bind pose', 
@@ -1279,7 +1289,39 @@ class MainWindow(qt.MainWindow):
         self.bind_pose_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'bind_pose.png', tip=tip)
         self.bind_pose_but.clicked.connect(lambda : mel.eval('gotoBindPose;'))
-        sub_tool_layout.addWidget(self.bind_pose_but)
+        sub_tool2_layout.addWidget(self.bind_pose_but)
+        
+        sub_tool2_layout.addWidget(QLabel('  '))
+        
+        #Go Maya Exoport
+        tip = lang.Lang(en='*Go_Maya_Export\n\n'+\
+                            'Export the selected object as a temporary file\n'+\
+                            'The last output is overwritten\n\n'+\
+                            'Object passing tool between maya scenes\n'+\
+                            'It is compatible with the same function of SI Side Bar',
+                            ja=u'・Go_Maya_Export\n\n'+\
+                            u'選択したオブジェクトを一時ファイルとして書き出します\n'+\
+                            u'前回出力分は上書きされます\n\n'+\
+                            u'シーン間のオブジェクト受け渡しツール\n'+\
+                            u'SI Side Bar の同機能とも互換性があります').output()
+        self.go_export_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'go_export.png', tip=tip)
+        self.go_export_but.clicked.connect(go.maya_export)
+        sub_tool2_layout.addWidget(self.go_export_but)
+        
+        #Go Maya Import
+        tip = lang.Lang(en='*Go_Maya_Import\n\n'+\
+                            'Receive objects output by Go_Maya_Export\n\n'+\
+                            'Object passing tool between maya scenes\n'+\
+                            'It is compatible with the same function of SI Side Bar',
+                            ja=u'・Go_Maya_Import\n\n'+\
+                            u'Go_Maya_Export で出力したオブジェクトを受け取ります\n\n'+\
+                            u'シーン間のオブジェクト受け渡しツール\n'+\
+                            u'SI Side Bar の同機能とも互換性があります').output()
+        self.go_import_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'go_import.png', tip=tip)
+        self.go_import_but.clicked.connect(go.maya_import)
+        sub_tool2_layout.addWidget(self.go_import_but)
         
         #sub_tool_layout.addStretch(0)
         
@@ -1293,6 +1335,7 @@ class MainWindow(qt.MainWindow):
         self.but_list.append(lock_widget)
         self.but_list.append(mode_widget)
         self.but_list.append(sub_tool_widget)
+        self.but_list.append(sub_tool2_widget)
         
         self.set_column_stretch()#ボタン間隔が伸びないようにする
         #self.init_but_width_list(but_list=self.but_list)#配置実行
