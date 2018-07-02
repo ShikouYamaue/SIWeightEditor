@@ -214,6 +214,18 @@ Auto_Symmetry後に簡単に左右結合ができたりします。
 
 ![siweighteditor16](https://user-images.githubusercontent.com/28256498/42170172-ba98a044-7e50-11e8-90ee-2802d230c857.gif)
 
+・ジョイント左右命名規則エディタの使い方  
+右クリックで設定ウィンドウを開きラベリングルールを設定します。  
+左右対になるようにPrefix, Suffix, middle_nameを設定します。  
+正規表現検索するのでワイルドカードは . (ピリオド)で指定できます。  
+
+例）_L01　⇄ _R01 を対にしたい場合はそれぞれ  
+_L01 →　_L..  
+_R01 → _R..  
+と記入します。  
+
+![image](https://user-images.githubusercontent.com/28256498/42170704-43509d6e-7e52-11e8-91a6-edeb28609531.png)
+
 ### Toggle Mute Skinning / Go to Bind Pose 
 
 ![image](https://user-images.githubusercontent.com/28256498/42170017-575c39a0-7e50-11e8-996a-87293e8053bb.png)
@@ -242,7 +254,7 @@ Mayaシーン間でのオブジェクトの受け渡し補助ツールです。
 ・Go Maya Import  
 GoMayaExportで出力したオブジェクトを読み込みます。
 
-
+![siweighteditor19](https://user-images.githubusercontent.com/28256498/42170922-d80072fe-7e52-11e8-965d-80fc76fcb114.gif)
 
 ## オプション機能
 
