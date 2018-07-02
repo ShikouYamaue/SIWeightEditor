@@ -123,6 +123,11 @@ nsrt各ボタン　→　UIのジョイントカラム右クリックすると�
 
 ![siweighteditor8](https://user-images.githubusercontent.com/28256498/41661699-3fc866b2-74da-11e8-969c-1da1644da3a7.gif)
 
+## サブツール
+ウェイト調整で重宝する機能をサブツール群としてまとめました  
+
+![image](https://user-images.githubusercontent.com/28256498/42167306-9cad957e-7e48-11e8-891e-6db4277ead3a.png)
+
 ### ウェイトハンマーとの連携
 
 ![image](https://user-images.githubusercontent.com/28256498/41798593-30aaaa52-76a9-11e8-9d23-394b1315fd41.png)
@@ -130,6 +135,126 @@ nsrt各ボタン　→　UIのジョイントカラム右クリックすると�
 Maya標準機能のウェイトハンマーを選択したセル頂点に対して実行します。  
 
 ![siweighteditor11](https://user-images.githubusercontent.com/28256498/41798700-9dc21404-76a9-11e8-9431-b7b69175238e.gif)
+
+### Freeze / Freeze_M
+
+![image](https://user-images.githubusercontent.com/28256498/42168224-5c725550-7e4b-11e8-8cfc-988251d9cfb1.png)
+
+・Freeze  
+選択オブジェクトのヒストリを全ベイクしたあとデフォーマクラスタとブレンドシェイプを書き戻します。  
+デフォーマクラスタ、ブレンドシェイプを保護しつつヒストリをきれいにしたいときに。  
+
+・freeze_M  
+選択オブジェクトのヒストリを全ベイクしたあとスキニング、デフォーマクラスタ、ブレンドシェイプを書き戻します。  
+スキニング後、頂点追加やラティス変形した場合にかけておくと安心です。  
+
+![siweighteditor14](https://user-images.githubusercontent.com/28256498/42168248-6ed9c12e-7e4b-11e8-8d0a-a8ea541cc9ef.gif)
+
+### Simple Weight Copy / Paste
+
+![image](https://user-images.githubusercontent.com/28256498/42168321-a14d7ede-7e4b-11e8-9e13-f689ce1d01b4.png)
+
+・Simple Weight Copy  
+選択オブジェクトのウェイトデータをオブジェクトごとに一時ファイルとして書き出します。  
+前回出力分は上書きされます。  
+
+・Simple Weight Copy (Name Index)  
+コピーしたウェイトをオブジェクト名と頂点番号で書き戻します。  
+バインド情報も書き戻すので事前バインド不要です。  
+
+・Simple Weight Copy (Name Position)※Maya2016以降  
+同じくオブジェクト名と頂点座標で書き戻します。  
+頂点番号が変わった場合はこちらをご利用ください。  
+
+![siweighteditor15](https://user-images.githubusercontent.com/28256498/42168767-dec8b5c0-7e4c-11e8-938c-0e5731ea7b87.gif)
+
+### Transfer Weight Multiple
+
+SIのGatorライクなウェイト転写機能です。  
+
+![image](https://user-images.githubusercontent.com/28256498/42168742-d151a078-7e4c-11e8-87ec-103cfbd36e42.png)
+
+・Transfer Weight / Copy  
+転送元のメッシュ情報をコピーします。  
+複数メッシュ指定可能です。
+
+・Transfer Weight / Paste  
+転送元のメッシュからウェイト情報を転写してきます。  
+複数メッシュとコンポーネント単位の指定可能です。  
+
+![siweighteditor13](https://user-images.githubusercontent.com/28256498/42169047-a406172e-7e4d-11e8-8f0f-9cfeb50493d2.gif)
+
+###  Symmetry機能
+
+よく使うミラーリング系ツール
+
+![image](https://user-images.githubusercontent.com/28256498/42169176-eeb59ccc-7e4d-11e8-9e1a-e503f51a2b18.png)
+
+・Weight_Symmetrize  
+選択した頂点ウェイトを反転命名規則に従ってジョイントラベルを設定しミラーリングします。  
+対象メッシュがバインドされていなくても自動バインドするので事前設定不要です。  
+メッシュ単位、コンポーネント単位どちらでも実行できます。  
+右クリックで命名規則ウィンドウが開きます。  
+
+選択メッシュが1つの時→ +X ⇄ -X どちらに転送するかウィンドウが開きます  
+選択メッシュが複数の時→　最初に選択したメッシュのウェイト情報を残りに反転転写します。  
+選択コンポーネントの時→　反対のグローバル座標のコンポーネントから反転してきます。  
+
+・Auto_Symmetry  
+メッシュ反転からウェイトミラーまで自動。  
+こちらもジョイントラベリング、バインド、ミラーまで一括です。  
+右クリックで命名規則ウィンドウが開きます。 
+
+スキンメッシュだけでなく、ジョイントやロケータ等なんでも反転できます。
+
+・Mesh Marge with Skinning  
+スキニングを保ったままメッシュを結合します。  
+機能でもできなくないですが、スキンクラスタを共有するのでノンデフォーマヒストリ削除後のアンドゥなどが非常に不安定なので独自機能として実装しています。  
+Auto_Symmetry後に簡単に左右結合ができたりします。  
+
+![siweighteditor16](https://user-images.githubusercontent.com/28256498/42170172-ba98a044-7e50-11e8-90ee-2802d230c857.gif)
+
+・ジョイント左右命名規則エディタの使い方  
+右クリックで設定ウィンドウを開きラベリングルールを設定します。  
+左右対になるようにPrefix, Suffix, middle_nameを設定します。  
+正規表現検索するのでワイルドカードは . (ピリオド)で指定できます。  
+
+例）_L01　⇄ _R01 を対にしたい場合はそれぞれ  
+_L01 →　_L..  
+_R01 → _R..  
+と記入します。  
+
+![image](https://user-images.githubusercontent.com/28256498/42170704-43509d6e-7e52-11e8-91a6-edeb28609531.png)
+
+### Toggle Mute Skinning / Go to Bind Pose 
+
+![image](https://user-images.githubusercontent.com/28256498/42170017-575c39a0-7e50-11e8-996a-87293e8053bb.png)
+
+・Toggle Mute Skinning
+選択したメッシュのスキニングのミュートを一括トグル。
+何も選択せずに実行でシーン内のメッシュに全適用。
+
+・Go to Bind Pose 
+標準機能のバインドポーズに戻るを実行します。
+
+![siweighteditor18](https://user-images.githubusercontent.com/28256498/42170480-96990840-7e51-11e8-8319-881e7e91305d.gif)
+
+### Go Maya Export / Import
+
+Mayaシーン間でのオブジェクトの受け渡し補助ツールです。  
+毎回場所を指定して出力したり読み込むのがめんどくさいので。
+スキンメッシュはデタッチしないとジョイント階層がついてくるのでFreezeとSimple Weight Copy/Pasteを併用すると便利です。
+
+![image](https://user-images.githubusercontent.com/28256498/42170072-7523953c-7e50-11e8-9887-317a9c11cdd1.png)
+
+・Go Maya Export  
+所定の場所に選択オブジェクトを書き出します。
+前回出力分は上書きされます。
+
+・Go Maya Import  
+GoMayaExportで出力したオブジェクトを読み込みます。
+
+![siweighteditor19](https://user-images.githubusercontent.com/28256498/42170922-d80072fe-7e52-11e8-965d-80fc76fcb114.gif)
 
 ## オプション機能
 
