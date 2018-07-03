@@ -49,7 +49,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.0'
+VERSION = 'r1.1.1'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -146,28 +146,57 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
         super(self.__class__, self).__init__(parent)
         self.installEventFilter(self)
         
+    #ホイールイベントをのっとる
+    def wheelEvent(self,e):
+        pass
+        
     def eventFilter(self, obj, event):
         if event.type() == QEvent.FocusIn:
             self.sel_all_input()
             self.focused.emit()
         if event.type() == QEvent.Wheel:
+            delta = event.delta()
+            delta /= abs(delta)#120単位を1単位に直す
+            shift_mod = self.check_shift_modifiers()
+            ctrl_mod = self.check_ctrl_modifiers()
+            if shift_mod:
+                self.setValue(self.value()+delta*0.001*MAXIMUM_WEIGHT)
+            elif ctrl_mod:
+                self.setValue(self.value()+delta*0.1*MAXIMUM_WEIGHT)
+            else:
+                self.setValue(self.value()+delta*0.01*MAXIMUM_WEIGHT)
             cmds.scriptJob(ro=True, e=("idle", self.emit_wheel_event), protected=True)
         if event.type() == QEvent.KeyPress:
             self.keypressed.emit()
         if event.type() == QEvent.MouseButtonPress:
             self.mousepressed.emit()
         return False
+        
     def emit_wheel_event(self):
         self.wheeled.emit()
-    #ウェイト入力窓を選択するジョブ
+        
+    #入力窓を選択するジョブ
     def sel_all_input(self):
         cmds.scriptJob(ro=True, e=("idle", self.select_box_all), protected=True)
+        
     #スピンボックスの数値を全選択する
     def select_box_all(self):
         try:
             self.selectAll()
         except:
             pass
+            
+    def check_shift_modifiers(self):
+        mods = QApplication.keyboardModifiers()
+        isShiftPressed =  mods & Qt.ShiftModifier
+        shift_mod = bool(isShiftPressed)
+        return shift_mod
+        
+    def check_ctrl_modifiers(self):
+        mods = QApplication.keyboardModifiers()
+        isCtrlPressed =  mods & Qt.ControlModifier
+        ctrl_mod = bool(isCtrlPressed)
+        return ctrl_mod
         
 class EditorSpinbox(QSpinBox):
     def __init__(self, parent=None):
@@ -1577,11 +1606,13 @@ class MainWindow(qt.MainWindow):
     
     numeric_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.']
     def direct_cell_input(self, string):
+        if not self.sel_model.selectedIndexes():
+            return
         if string in self.numeric_list:
             self.view_widget.ignore_key_input = True#一時的にテーブルへのキー入力無効
             self.input_box = PopInputBox(value=string, 
-                                                            mode=self.mode_but_group.checkedId(),
-                                                            direct=True)
+                                        mode=self.mode_but_group.checkedId(),
+                                        direct=True)
             self.input_box.closed.connect(lambda : self.apply_input_box_value(direct=True))
         
     #ゼロセルの文字の色を変える
