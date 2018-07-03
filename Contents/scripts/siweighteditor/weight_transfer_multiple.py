@@ -270,6 +270,7 @@ class WeightTransferMultiple(qt.SubWindow):
         
         for node in self.hl_nodes:
             vtxArray = self.node_vtxArray_dict[node]
+            
             #print 'node vtx array :', node , vtxArray
             temp_node = temp_node_dict[node]
             org_infs = self.influences_dict[node]
@@ -278,9 +279,10 @@ class WeightTransferMultiple(qt.SubWindow):
             #inf_id_list = [temp_infs.index(inf) for inf in org_infs]
             #インフルエンスの並び順がずれていることがあるので名前でソートする
             inf_id_list = [org_infs.index(inf) for inf in temp_infs]
-            #print 'adust weight data ;', node, vtxArray
-            #print 'org_infs :', org_infs
-            #print 'temp_infs :', temp_infs
+            # print 'adust weight data ;', node, vtxArray
+            # print 'org_infs :', org_infs
+            # print 'temp_infs :', temp_infs
+            # print 'new_inf_list', inf_id_list
             #ウェイトを整理する
             org_weights_list = self.node_weight_dict[node]
             trans_weights_list = self.node_weight_dict[temp_node]

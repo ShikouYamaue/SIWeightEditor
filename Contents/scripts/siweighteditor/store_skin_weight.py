@@ -46,7 +46,7 @@ class StoreSkinWeight():
             #print 'get current vtx :', node, mesh_path_name
             skinFn, vtxArray, skinName = self.adust_to_vertex_list(meshDag, component, force=True)
             #print 'get vtx array :', vtxArray
-            vtxArrays += vtxArray
+            vtxArrays += sorted(vtxArray)
             #return vtxArray
             #print 'get selected vtx array', vtxArray
             #print 'get current vtx :', vtxArray
