@@ -4,7 +4,7 @@ from maya import cmds
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 import maya.api.OpenMaya as om2
-import maya.api.OpenMayaUI as omui
+#import maya.api.OpenMayaUI as omui
  
 kPluginCmdName = "bakeSkinWeight" # MELコマンド名
  

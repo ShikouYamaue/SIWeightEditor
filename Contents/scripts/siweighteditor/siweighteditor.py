@@ -31,6 +31,7 @@ from . import modeling
 from . import symmetrize
 from . import joint_rule_editor
 from . import go
+from . import prof
 
 import imp
 try:
@@ -49,7 +50,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.1'
+VERSION = 'r1.1.2   '
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -87,6 +88,7 @@ def load_plugin():
     #ツールチップもついでに有効か
     cmds.help(popupMode=True)
 
+    
 def timer(func):
     #戻す用関数を定義
     def wrapper(*args, **kwargs):
@@ -287,7 +289,6 @@ class RightClickTableView(QTableView):
             return
         super(self.__class__, self).keyPressEvent(e)
         
-            
 #Horizontal_Headerを縦書きにするカスタムHeader_View
 class MyHeaderView(QHeaderView):
     doubleClicked = Signal(int)
@@ -333,9 +334,11 @@ class MyHeaderView(QHeaderView):
     def section_enter(self, e):
         print 'section_enter',e
 
+    #@prof.profileFunction()
     def paintSection(self, painter, rect, index):
         painter.rotate(-90)#90度回転
         data = self._get_data(index)#インフルエンス名
+        #data = 'test'
         data = data.split(':')[-1]
         is_active = self.check_section_is_active(index)#セクションがアクティブかどうか
         
@@ -366,11 +369,9 @@ class MyHeaderView(QHeaderView):
     #現在のセクションがアクティブかどうかを判定する
     def check_section_is_active(self, index):
         sel_model = self.selectionModel()#ビューに設定されている選択モデルを取得する
-        selected_items = sel_model.selectedIndexes()
-        if selected_items:
-            is_active = sel_model.columnIntersectsSelection(index, selected_items[0])
-        else:
-            is_active = False
+        selected_item = sel_model.currentIndex()
+        is_active = sel_model.columnIntersectsSelection(index, selected_item)
+        #print 'header is active :', is_active
         return is_active
         
         
@@ -656,9 +657,15 @@ class Option():
             print e.message
         WINDOW = MainWindow()
         WINDOW.init_flag=False
-        WINDOW.resize(WINDOW.sw, WINDOW.sh)
         WINDOW.move(WINDOW.pw-8, WINDOW.ph-31)
+        #ウィンドウ幅が狭くても正しくボタン再配置できるように大きいサイズから縮めておく
+        for i in range(0, 800, 50):
+            WINDOW.resize(1000 - i, 800)
+        WINDOW.resize(WINDOW.sw, WINDOW.sh)
         WINDOW.show()
+        #WINDOW.get_set_skin_weight()
+        #起動時に取得実行
+        #cmds.scriptJob(ro=True, e=("idle", lambda : WINDOW.get_set_skin_weight()), protected=True)
         
 class MainWindow(qt.MainWindow):
     selection_mode = 'tree'
@@ -1080,7 +1087,8 @@ class MainWindow(qt.MainWindow):
         tip = lang.Lang(en='Values entered are percentages added to exisiting values', ja=u'既存値への率加算入力').output()
         self.add_par_but = qt.make_flat_btton(name='Add%', bg=self.hilite, border_col=180, w_max=but_w+8, w_min=but_w+8, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Normalize new weights\nRight-click forced normalization execution', ja=u'新規ウェイトの正規化\n右クリックで強制正規化実行').output()
+        tip = lang.Lang(en='Normalize new weights\n\nRight-click forced normalization execution\n*If you execute without selecting a cell, it will be applied to all cells', 
+                                ja=u'新規ウェイトの正規化\n\n右クリックで強制正規化実行\n※セルを選択せずに実行すると全てのセルに適用されます').output()
         self.norm_but = qt.make_flat_btton(name='Normalize', bg=self.hilite, border_col=180, w_max=norm_w, w_min=norm_w, h_max=but_h, h_min=but_h, 
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
         tip = lang.Lang(en='Accept weight values ​​greater than 1.0 or 100 in total', ja=u'合計1.0もしくは100以上のウェイト値を許容する').output()
@@ -1395,7 +1403,7 @@ class MainWindow(qt.MainWindow):
         self.weight_input.keypressed.connect(lambda : self.store_keypress(True))
         self.weight_input_sld.valueChanged.connect(self.change_from_sld)
         self.weight_input_sld.sliderPressed.connect(self.sld_pressed)
-        self.weight_input_sld.valueChanged.connect(lambda : self.culc_cell_value(from_spinbox=False))
+        self.weight_input_sld.valueChanged.connect(lambda : self.culc_cell_value(from_slider=True))
         self.weight_input_sld.sliderReleased.connect(self.sld_released)
         
         tip = lang.Lang(en='Clear cell selection and spin box value', 
@@ -1416,8 +1424,8 @@ class MainWindow(qt.MainWindow):
         seach_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         
         self.search_but_group = QButtonGroup()
-        tip = lang.Lang(en='Refine search by specified character string', 
-                            ja=u'指定文字列で絞り込み検索').output()
+        tip = lang.Lang(en='Refine joints search by specified character string', 
+                            ja=u'表示中のジョイントを指定文字列で絞り込み検索').output()
         self.refine_but = qt.make_flat_btton(name='Refine', bg=self.hilite, border_col=180, w_max=45, w_min=45, h_max=18, h_min=18, 
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
         tip = lang.Lang(en='Add the joint containing the specified character string to the current display', 
@@ -1501,14 +1509,12 @@ class MainWindow(qt.MainWindow):
         tip = lang.Lang(en='Show latest release page', ja=u'最新リリースページを表示').output()
         self.release_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'release.png', tip=tip)
-        
-        tip = lang.Lang(en='Display help page', ja=u'ヘルプページの表示').output()
         self.release_but.clicked.connect(lambda : webbrowser.open(REREASE_PATH))
         msg_layout.addWidget(self.release_but)
         
+        tip = lang.Lang(en='Display help page', ja=u'ヘルプページの表示').output()
         self.help_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'help.png', tip=tip)
-        
         self.help_but.clicked.connect(lambda : webbrowser.open(HELP_PATH))
         msg_layout.addWidget(self.help_but)
         
@@ -1530,10 +1536,11 @@ class MainWindow(qt.MainWindow):
         msg_layout.setSpacing(6)#ウェジェットどうしの間隔を設定する
         
         self.create_job()
-        self.get_set_skin_weight()#起動時に取得実行
         self.change_add_mode(id=self.mode)
         self.change_decimal_digits()
         self.zero_cell_darken()
+        self.get_set_skin_weight()
+        
         
     def open_joint_rule_editor(self):
         joint_rule_editor.Option()
@@ -1774,6 +1781,7 @@ class MainWindow(qt.MainWindow):
         self.sel_model.clearSelection()
             
     #ウェイトロック
+    #@prof.profileFunction()
     @timer
     def lock_weight(self):
         self.counter.reset()
@@ -1810,11 +1818,14 @@ class MainWindow(qt.MainWindow):
         for skin_cluster, vertices in skin_vtx_dict.items():
             new_lock_data_list = []
             pre_lock_data_dict = self.decode_lock_data(skin_cluster)
+            
             for vtx in vertices:
                 lock_influences = vtx_lock_dict[vtx]
-                if vtx in pre_lock_data_dict.keys():
+                try:#キーの有無を比較すると重かったので例外処理で乗り切る
                     pre_lock_influences = pre_lock_data_dict[vtx]
                     lock_influences = list(set(lock_influences+pre_lock_influences))
+                except:
+                    pass
                 pre_lock_data_dict[vtx] = lock_influences
             new_lock_data_list = self.encode_lock_data(pre_lock_data_dict)
             cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
@@ -1823,6 +1834,7 @@ class MainWindow(qt.MainWindow):
         self.counter.lap_print()
             
     #ウェイトアンロック
+    #@prof.profileFunction()
     @timer
     def unlock_weight(self):
         skin_vtx_dict = defaultdict(lambda : [])
@@ -1854,28 +1866,33 @@ class MainWindow(qt.MainWindow):
             #まとめて処理するためにいろいろ情報を整理して格納
             skin_vtx_dict[skin_cluster] += [vtx]
             vtx_lock_dict[vtx] += [rock_influence]
-            
         #ロック情報を文字配列としてスキンクラスタのカスタムアトリビュートに格納
         for skin_cluster, vertices in skin_vtx_dict.items():
             new_lock_data_list = []
             pre_lock_data_dict = self.decode_lock_data(skin_cluster)
             for vtx in vertices:
                 lock_influences = vtx_lock_dict[vtx]
-                if vtx in pre_lock_data_dict.keys():
+                try:
                     pre_lock_influences = pre_lock_data_dict[vtx]
                     lock_influences = list(set(pre_lock_influences)-set(lock_influences))
+                except:
+                    pass
                 pre_lock_data_dict[vtx] = lock_influences
             new_lock_data_list = self.encode_lock_data(pre_lock_data_dict)
-            cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
+            if not new_lock_data_list:
+                self.clear_lock_weight()
+            else:
+                cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
             
             
     #アトリビュートに格納する形式にロックデータをエンコードする
     def encode_lock_data(self, lock_dict):
-        return [str(v)+self.spliter+','.join(influences) for v, influences in lock_dict.items()]
+        return [str(v)+self.spliter+','.join(influences) for v, influences in lock_dict.items() if len(influences) != 0]
         
     #アトリビュートのロック情報を翻訳する
     lock_attr_name = 'SI_Weight_Lock_Data'
     spliter = '-|-'#アトリビュートに格納するときのインフルエンスつなぎ文字
+    #@prof.profileFunction()
     def decode_lock_data(self, skin_cluster):
         try:
             lock_data_dict = {}
@@ -1885,7 +1902,10 @@ class MainWindow(qt.MainWindow):
             else:
                 lock_list = cmds.getAttr(skin_cluster+'.'+self.lock_attr_name) or []
                 for lock_data in lock_list:
-                    lock_data_dict[int(lock_data.split(self.spliter)[0])] = lock_data.split(self.spliter)[1].split(',')
+                    split_lock_data = lock_data.split(self.spliter)
+                    lock_inf_str = split_lock_data[1]
+                    if lock_inf_str:
+                        lock_data_dict[int(split_lock_data[0])] = lock_inf_str.split(',')
             return lock_data_dict
         except Exception as e:#読み込み失敗したらクリアする
             print e.message
@@ -1939,11 +1959,14 @@ class MainWindow(qt.MainWindow):
                 return
         else:
             self.input_box_value = self.input_box.input.value()
-        self.culc_cell_value(from_spinbox=True, from_input_box=True)
+        self.culc_cell_value(from_spinbox=False, from_input_box=True)
         
         #フォーカスを取る
         self.activateWindow()
         self.raise_()
+        #Pyside1だとなぜか繰り返さないとフォーカス取れない
+        self.view_widget.setFocus()
+        self.weight_input.clearFocus()
         self.view_widget.setFocus()
         #キー入力受付をもとに戻す
         self.view_widget.ignore_key_input = False
@@ -2072,6 +2095,7 @@ class MainWindow(qt.MainWindow):
     all_influences = []
     pre_current_vtx_dict = {}
     #@timer
+    #@prof.profileFunction()
     def get_set_skin_weight(self, node_vtx_dict={}, cycle=False, clear=False, filter=False, 
                                         show_dict={}, show_all=False, show_bad=False, undo=False):
         self.reset_message()#メッセージ初期化
@@ -2130,25 +2154,22 @@ class MainWindow(qt.MainWindow):
         else:#ロックされてないとき
             pass
         
-        ##同じ選択で処理抜けるom版を後で描くこと
-        #if self.pre_sel == sel and sel_vertices is None:
-            #print 'same selection return :'
-            #return
-            
         self.counter.count(string='get mesh vtx :')
         
         #頂点ID、ウェイト、インフルエンスを格納したインスタンスから各種データをとりだしておく
+        
         if not self.node_vtx_dict:
             self.store_skin_weight.run_store()
+            self.hl_nodes = list(set(self.store_skin_weight.mesh_node_list))
             self.all_influences = copy.copy(self.store_skin_weight.all_influences)
             self.all_skin_clusters = self.store_skin_weight.all_skin_clusters#ロック全解除のためにスキンクラスタ全部入りリスト作っておく
-            self.hl_nodes = list(set(self.store_skin_weight.mesh_node_list))
             self.influences_dict  = self.store_skin_weight.influences_dict#メッシュごとのインフルエンス一覧
             self.node_vtx_dict  = self.store_skin_weight.node_vtx_dict#メッシュごとの頂点ID一覧
             self.node_weight_dict  = self.store_skin_weight.node_weight_dict#メッシュごとのウェイト一覧
             self.node_skinFn_dict = self.store_skin_weight.node_skinFn_dict
         else:
             pass
+
         if not self.show_dict:
             self.show_dict = self.store_skin_weight.show_dict
         
@@ -2190,6 +2211,7 @@ class MainWindow(qt.MainWindow):
             
             #ロック情報を取得する
             lock_data_dict = self.decode_lock_data(skin_cluster)
+            lock_data_dict_keys = lock_data_dict.keys()
             
             self.v_header_list.append(node.split('|')[-1].split(':')[-1])
             self.mesh_rows.append(self.all_rows)
@@ -2222,8 +2244,10 @@ class MainWindow(qt.MainWindow):
                 for v in target_vertices:
                     vtx_name = "{0:}.vtx[{1:}]".format(node, v)#IDを頂点名に変換しておく
                     #頂点のロック情報を取得しておく
-                    if v in lock_data_dict.keys():
+                    try:#if v in keys比較が重いので例外処理で高速化
                         self.lock_data_dict[self.all_rows] = [vtx_name, lock_data_dict[v]]
+                    except:
+                        pass
                     
                     self.all_editable_rows.add(self.all_rows)
                     self.v_header_list.append(v)
@@ -2257,6 +2281,8 @@ class MainWindow(qt.MainWindow):
                         self.filter_weight_dict[influences[j]] += inf_weight_sum
     
         self.mesh_rows.append(self.all_rows)#最後のメッシュの末尾探索のためにもう一個分メッシュ行を追加しておく
+        
+        self.counter.count('adjust weight data :')
         
         #表示中のインフルエンスの合計が0ならフィルターする
         if self.filter_but.isChecked():
@@ -2292,11 +2318,12 @@ class MainWindow(qt.MainWindow):
         self.inf_column_dict = {inf:i for i,inf in enumerate(self.all_influences)}
         
         #事前に集めたロック情報をもとにロック設定する
+        inf_column_dict_keys = self.inf_column_dict.keys()
         for row, lock_data in self.lock_data_dict.items():
             vtx_name = lock_data[0]
             lock_influences = lock_data[1]
             for influence in lock_influences:
-                if influence in self.inf_column_dict.keys():
+                if influence in inf_column_dict_keys:
                     column = self.inf_column_dict[influence]
                     self.weight_lock_data.add((row, column))
                 #ロックされているインフルエンスIDをすべて格納する
@@ -2311,6 +2338,11 @@ class MainWindow(qt.MainWindow):
             del self.weight_model
         except Exception as e:
             #print e.message, 'in get set'
+            pass
+        try:
+            self.sel_model.deleteLater()
+            del self.sel_model
+        except:
             pass
             #print 'faild to delete weight model in remake :'
             
@@ -2337,8 +2369,10 @@ class MainWindow(qt.MainWindow):
         
         self.counter.count('ui data finalaize :')
         
-        self.model_index = self.weight_model.indexes#モデルのインデックス番号をあらかじめ取得
-        self.model_id_dict = {cell_id:i for i, cell_id in enumerate(self.model_index)}
+        #↓もういらない？
+        #self.model_index = self.weight_model.indexes#モデルのインデックス番号をあらかじめ取得
+        #self.model_id_dict = {cell_id:i for i, cell_id in enumerate(self.model_index)}
+        
         #前回の選択を格納
         self.pre_hl_nodes = self.hl_nodes
         
@@ -2351,8 +2385,13 @@ class MainWindow(qt.MainWindow):
         
         
     #セルの選択変更があった場合に現在の選択セルを格納する
-    @timer
+    #@timer
+    #@prof.profileFunction()
     def cell_changed(self, selected, deselected):
+        #ジョイントハイライトは選択状態の格納に依存しない形に独立
+        if self.joint_hl_but.isChecked():
+            self.hilite_joints()
+            
         self.reset_message()#メッセージ初期化
         if self.pre_tool:
             self.hilite_flag = True#get_setしないためのフラグ
@@ -2371,17 +2410,20 @@ class MainWindow(qt.MainWindow):
             self.pre_tool = None
             self.header_selection = None
         self.select_change_flag = True
+        #ここめっちゃ重い↓対応要件等
         self.selected_items =  self.sel_model.selectedIndexes()
+        #self.selected_items =  []
+        
         if not self.selected_items:
             self.weight_input_sld.setValue(0.0)
         else:
             self.change_add_mode(self.add_mode, change_only=True)#スピンボックスの値を更新するためにAddMode関数にいく
         self.pre_add_value = 0.0#加算量を初期化
         self.sel_rows = list(set([item.row() for item in self.selected_items]))
+        
+        
         if self.highlite_but.isChecked():
             self.hilite_vertices()
-        if self.joint_hl_but.isChecked():
-            self.hilite_joints()
         
     @timer
     def hilite_vertices(self):
@@ -2389,8 +2431,19 @@ class MainWindow(qt.MainWindow):
         
         self.counter.reset()
          
-        rows = list(set([item.row() for item in self.selected_items]))
         vertices = []
+        row_count =  self.weight_model.rowCount()
+        selected_item = self.sel_model.currentIndex()
+        if not selected_item:
+            return
+        '''
+        if MAYA_VER <= 2016:#2016以前はIntersectsで正しくとれる
+            rows = [id for id in xrange(row_count) if self.sel_model.rowIntersectsSelection(id, selected_item)]
+        else:#PySide2ではなぜかrowIntersectsSelectionが正しく機能しない問題
+            rows = list(set([item.row() for item in self.sel_model.selectedIndexes()]))
+        '''
+        rows = list(set([item.row() for item in self.selected_items]))
+        #print rows
         if rows:
             #高速選択するために頂点情報をつながり形式にしてまとめるvtx[0:5000]みたいな
             #全選択だと展開時より20倍くらい早い
@@ -2441,16 +2494,13 @@ class MainWindow(qt.MainWindow):
         else:
             self.cell_changed(self.selected_items, None)
             
-    def reset_joint_hl(self):
-        if not self.joint_hl_but.isChecked():
-            self.disable_joint_override()
-        else:
-            self.cell_changed(self.selected_items, None)
-            
-        
     def hilite_joints(self):
         cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
-        self.sel_columns = list(set([item.column() for item in self.selected_items]))
+        column_count =  self.weight_model.columnCount()
+        selected_item = self.sel_model.currentIndex()
+        if not selected_item:
+            return
+        self.sel_columns = [id for id in xrange(column_count) if self.sel_model.columnIntersectsSelection(id, selected_item)]
         for i, influence in enumerate(self.all_influences):
             try:
                 if i in self.sel_columns:
@@ -2466,6 +2516,12 @@ class MainWindow(qt.MainWindow):
                 pass
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
         
+    def reset_joint_hl(self):
+        if not self.joint_hl_but.isChecked():
+            self.disable_joint_override()
+        else:
+            self.cell_changed(self.selected_items, None)
+            
     #全ての骨ハイライトをおふ
     def disable_joint_override(self):
         cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
@@ -2559,34 +2615,52 @@ class MainWindow(qt.MainWindow):
     select_change_flag = True
     from_spinbox =False
     #入力値をモードに合わせてセルの値と合算、セルに値を戻す
-    def culc_cell_value(self, from_spinbox=False, from_input_box=False):
-        if self.closed_flag:#ウィンドウ閉じた後は何もしない
-            return
-        if self.from_spinbox:
-            self.from_spinbox = False
-            return
+    caluc_times = 0
+    editing_count = 0
+    def culc_cell_value(self, from_spinbox=False, from_input_box=False, from_slider=False):
         self.from_spinbox = from_spinbox
-        self.counter.reset()
         
-        self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
-        if not  self.selected_items:
+        if self.closed_flag:#ウィンドウ閉じた後は何もしない
+            #print 'allready closed return :'
+            return
+            
+        if self.from_spinbox:
+            #print 'from spin box return :'
+            self.from_spinbox = False
+            #return
+            
+        if not self.change_flag and from_slider:
+            #print 'not change return :'
             self.from_spinbox = False
             return
-        #add_value ボックス入力値
-        #after_value 入力後のボックス値
-        #n_value 正規化された値をリストに戻すための変数
-        self.text_value_list = []
-        if not self.change_flag and not from_spinbox:
-            self.from_spinbox = False
-            return
+            
         if not self.selected_items:
+            #print 'no selection return :'
             self.from_spinbox = False
             return
+            
+        #Editing_Finishedが二回走らないように予防
+        if from_spinbox:
+            if self.editing_count == 1:
+                self.editing_count = 0
+                self.weight_input.setFocus()
+                return
+            self.editing_count += 1
+        
         #絶対値モードでフォーカス外したときに0だった時の場合分け
+        '''
         if from_spinbox and not self.key_pressed and not from_input_box:
             #print 'focus error :'
+            print 'from spin and no key and not input box return :'
             self.from_spinbox = False
             return
+        '''
+            
+        #入力重複回避ここまで------------------------------------------------------------
+        self.counter.reset()
+        self.text_value_list = []
+        self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
+        
         #0-1表示なら割り算省略、ちょっとは早くなる？？
         if MAXIMUM_WEIGHT == 100.0:
             if not from_input_box:
@@ -2599,6 +2673,8 @@ class MainWindow(qt.MainWindow):
             else:
                 new_value = self.input_box_value
             
+        #print 'calc cell value :', self.caluc_times, 'val :', new_value
+        self.caluc_times += 1
         #絶対値の時の処理
         self.update_rows = set()
         self.row_column_dict = defaultdict(lambda : [])
@@ -2648,10 +2724,11 @@ class MainWindow(qt.MainWindow):
                     added_value = 0.0
                     
                 self.weight_model.setData(cell_id, added_value)
-                #print 'new_add_value',added_value, from_spinbox, from_input_box
+                #print 'calc 2 num :', org_value, new_value
+                #print 'new_add_value',added_value, 'spin :', from_spinbox, 'input :', from_input_box
                     
             #処理後のスピンボックスの値を設定
-            if from_spinbox:
+            if from_spinbox or from_input_box:
                 after_value = 0.0
                 self.pre_new_value = 0.0
             else:
@@ -2669,8 +2746,10 @@ class MainWindow(qt.MainWindow):
         
         
     #変更されたウェイト事前計算する
+    #@prof.profileFunction()
     @timer
     def precalculate_bake_weights(self, realbake=True, ignoreundo=False, enforce=0, round_digit=None):
+        #print 'precalculate_bake_weights : '
         self.counter.reset()
         #enforce-1は強制正規化フラッグ扱い
         if round_digit:#丸めの時は正規化しない
@@ -2996,28 +3075,63 @@ class MainWindow(qt.MainWindow):
         global select_job
         if select_job:
             #print 'remove job :', select_job
-            cmds.scriptJob(k=select_job)
+            cmds.scriptJob(k=select_job, f=True)
             select_job = None
             
     closed_flag = False
     def closeEvent(self, e):
-        print 'window close :'
+        print 'window closed :'
+        self.erase_func_data()
         self.closed_flag=True
         self.remove_job()
         self.save_window_data()
         self.disable_joint_override()
-        #ちゃんと消さないと莫大なUIデータがメモリに残り続けるので注意
+        self.deleteLater()
+        
+    #メモリ解放しっかり
+    #ちゃんと消さないと莫大なUIデータがメモリに残り続けるので注意
+    def erase_func_data(self):
+        print 'erase func data :'
         try:
-            self.weight_model.deleteLater()
             del self.weight_model
-        except:
-            pass
-        try:
-            self.sel_model.deleteLater()
             del self.sel_model
         except:
             pass
-        self.deleteLater()
+        try:
+            del self.view_widget
+        except:
+            pass
+        
+        try:
+            del self._data
+            del self.hl_nodes
+            del self.all_influences
+            del self.all_skin_clusters
+            del self.influences_dict 
+            del self.node_vtx_dict 
+            del self.node_weight_dict
+            del self.node_skinFn_dict 
+            
+            del self.header_selection
+            del self.all_rows
+            del self.v_header_list
+            del self.mesh_rows
+            del self.vtx_row_dict
+            del self.under_weight_rows
+            del self.over_weight_rows
+            del self.over_influence_limit_dict
+            del self.over_influence_limit_rows
+            del self.all_editable_rows
+            del self.weight_lock_data
+            del self.vtx_lock_data_dict
+            del self.node_id_dict
+            del self.mesh_model_items_dict
+            del self.filter_weight_dict
+            del self.vtx_weight_dict
+            del self.lock_data_dict
+        except:
+            pass
+            
         
 #アンドゥ時に辞書を更新しておく。
 def update_dict(node_weight_dict, node_id_dict):
