@@ -50,7 +50,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.2   '
+VERSION = 'r1.1.3'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -2211,7 +2211,6 @@ class MainWindow(qt.MainWindow):
             
             #ロック情報を取得する
             lock_data_dict = self.decode_lock_data(skin_cluster)
-            lock_data_dict_keys = lock_data_dict.keys()
             
             self.v_header_list.append(node.split('|')[-1].split(':')[-1])
             self.mesh_rows.append(self.all_rows)
@@ -2299,6 +2298,8 @@ class MainWindow(qt.MainWindow):
         if self.search_joint_list and self.search_but_group.checkedId() == 0:
             self.all_influences = [inf for inf in self.all_influences if any([True if s.upper() in inf.split('|')[-1].upper() else False for s in self.search_joint_list])]
         #print 'all_influences :',self.all_influences
+        #オーバーライドカラーを取得しておく
+        self.store_infulence_override_color()
         
         self.node_influence_id_list_dict = {}#カラム抜けを回避するためのノードごとのリスト辞書
         for node in self.hl_nodes:          
@@ -2494,6 +2495,11 @@ class MainWindow(qt.MainWindow):
         else:
             self.cell_changed(self.selected_items, None)
             
+    def store_infulence_override_color(self):
+        self.joint_override_dict = {}
+        for inf in self.all_influences:
+            self.joint_override_dict[inf] = cmds.getAttr(inf + '.overrideEnabled')
+            
     def hilite_joints(self):
         cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
         column_count =  self.weight_model.columnCount()
@@ -2510,9 +2516,13 @@ class MainWindow(qt.MainWindow):
                     cmds.setAttr(influence+'.wireColorB', 0.9)
                 else:
                     cmds.setAttr(influence+'.useObjectColor', 1)
+            except:
+                pass
+            try:
+                cmds.setAttr(influence + '.overrideEnabled', 0)
             except Exception as e:
-                self.set_message(msg='- Joint Hilite Error : Override attr still locked -', error=True)
                 print e.message
+                self.set_message(msg='- Joint Hilite Error : Override attr still locked -', error=True)
                 pass
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
         
@@ -2532,6 +2542,12 @@ class MainWindow(qt.MainWindow):
                 cmds.setAttr(influence+'.wireColorG', 0.5)
                 cmds.setAttr(influence+'.wireColorB', 0.5)
             except:
+                pass
+            try:
+                cmds.setAttr(influence + '.overrideEnabled', self.joint_override_dict[influence])
+            except Exception as e:
+                print e.message
+                self.set_message(msg='- Joint Unhilite Error : Override attr still locked -', error=True)
                 pass
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
         
