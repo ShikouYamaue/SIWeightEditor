@@ -50,7 +50,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.3'
+VERSION = 'r1.1.4'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -1397,13 +1397,13 @@ class MainWindow(qt.MainWindow):
         #スライダーとボックスの値をコネクト。連動するように設定。
         self.weight_input.valueChanged.connect(self.change_from_spinbox)
         self.weight_input.wheeled.connect(lambda : self.store_keypress(True))
-        self.weight_input.wheeled.connect(lambda : self.culc_cell_value(from_spinbox=True))
-        self.weight_input.editingFinished.connect(lambda : self.culc_cell_value(from_spinbox=True))
+        self.weight_input.wheeled.connect(lambda : self.calc_cell_value(from_spinbox=True))
+        self.weight_input.editingFinished.connect(lambda : self.calc_cell_value(from_spinbox=True))
         self.weight_input.focused.connect(lambda : self.store_keypress(False))
         self.weight_input.keypressed.connect(lambda : self.store_keypress(True))
         self.weight_input_sld.valueChanged.connect(self.change_from_sld)
         self.weight_input_sld.sliderPressed.connect(self.sld_pressed)
-        self.weight_input_sld.valueChanged.connect(lambda : self.culc_cell_value(from_slider=True))
+        self.weight_input_sld.valueChanged.connect(lambda : self.calc_cell_value(from_slider=True))
         self.weight_input_sld.sliderReleased.connect(self.sld_released)
         
         tip = lang.Lang(en='Clear cell selection and spin box value', 
@@ -1959,7 +1959,7 @@ class MainWindow(qt.MainWindow):
                 return
         else:
             self.input_box_value = self.input_box.input.value()
-        self.culc_cell_value(from_spinbox=False, from_input_box=True)
+        self.calc_cell_value(from_spinbox=False, from_input_box=True)
         
         #フォーカスを取る
         self.activateWindow()
@@ -2625,6 +2625,9 @@ class MainWindow(qt.MainWindow):
     key_pressed = None
     def store_keypress(self, pressed):
         self.key_pressed = pressed
+        self.editing_count = 0
+        self.re_forcus_flag = False
+        
         
     pre_new_value = 0.0
     selected_items = []
@@ -2633,7 +2636,7 @@ class MainWindow(qt.MainWindow):
     #入力値をモードに合わせてセルの値と合算、セルに値を戻す
     caluc_times = 0
     editing_count = 0
-    def culc_cell_value(self, from_spinbox=False, from_input_box=False, from_slider=False):
+    def calc_cell_value(self, from_spinbox=False, from_input_box=False, from_slider=False):
         self.from_spinbox = from_spinbox
         
         if self.closed_flag:#ウィンドウ閉じた後は何もしない
@@ -2641,8 +2644,13 @@ class MainWindow(qt.MainWindow):
             return
             
         if self.from_spinbox:
-            #print 'from spin box return :'
+            #print 'from spin box !!:'
             self.from_spinbox = False
+            if not self.weight_input.hasFocus():
+                #print 'from spin box and not focus return:'
+                if self.re_forcus_flag:
+                    self.weight_input.setFocus()
+                return
             #return
             
         if not self.change_flag and from_slider:
@@ -2658,9 +2666,13 @@ class MainWindow(qt.MainWindow):
         #Editing_Finishedが二回走らないように予防
         if from_spinbox:
             if self.editing_count == 1:
+                #print 'from spin box 2nd return :'
                 self.editing_count = 0
                 self.weight_input.setFocus()
                 return
+            else:
+                #print 'from spin box 1st go :'
+                self.re_forcus_flag = True
             self.editing_count += 1
         
         #絶対値モードでフォーカス外したときに0だった時の場合分け
@@ -2671,7 +2683,7 @@ class MainWindow(qt.MainWindow):
             self.from_spinbox = False
             return
         '''
-            
+        #print 'calc Cell value *+*+**+*+*+*+**+*:', self.caluc_times
         #入力重複回避ここまで------------------------------------------------------------
         self.counter.reset()
         self.text_value_list = []
@@ -2711,6 +2723,9 @@ class MainWindow(qt.MainWindow):
             after_value = new_value
             #print 'new_abs_value',new_value, from_spinbox, from_input_box
         else:
+            #加算モードで0なら変化なしなので逃げる
+            if new_value == 0.0:
+                return
             #最大最小を設定しておく
             min_value = 0.0
             max_value = 1.0
@@ -3071,7 +3086,7 @@ class MainWindow(qt.MainWindow):
             
     #パーセントの特殊処理、値をリリースして初期値に戻る
     def sld_released(self):
-        self.culc_cell_value()
+        self.calc_cell_value()
         #print 'sld mouse released'
         self.change_flag = False
         if self.add_mode == 1 or self.add_mode == 2:
