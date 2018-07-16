@@ -78,6 +78,8 @@ class BakeSkinWeightClass( om2.MPxCommand ):
         #アンドゥ用ウェイトデータをアップデートする
         siweighteditor.update_dict(self.redo_node_weight_dict, self.bake_node_id_dict)
         if flash:
+            if self.ignore_undo:#スライダー制御中のアンドゥ履歴は全無視する
+                return
             siweighteditor.refresh_window()
             
     

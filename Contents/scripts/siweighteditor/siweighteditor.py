@@ -51,7 +51,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.5'
+VERSION = 'r1.1.6'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -3039,6 +3039,7 @@ class MainWindow(qt.MainWindow):
         
     #ビューの状態を更新する
     def refresh_table_view(self):
+        '''
         #フォーカス移してテーブルの状態を更新する
         self.view_widget.setFocus()
         self.view_widget.clearFocus()
@@ -3047,6 +3048,12 @@ class MainWindow(qt.MainWindow):
         #ヘッダーの数だけセクション（行の頭）の状態をアップデートする
         for i in range(header.count()):
             header.updateSection(i)
+        '''
+        #結果リセットコマンド発行するだけでよかった
+        try:
+            self.weight_model.reset()
+        except:
+            pass
                 
     change_flag = False
     def sld_pressed(self):
@@ -3060,9 +3067,8 @@ class MainWindow(qt.MainWindow):
             
     #パーセントの特殊処理、値をリリースして初期値に戻る
     def sld_released(self):
-        self.calc_cell_value()
-        #print 'sld mouse released'
         self.change_flag = False
+        self.calc_cell_value()
         if self.add_mode == 1 or self.add_mode == 2:
             self.weight_input.setValue(0.0)
             self.change_from_spinbox()
