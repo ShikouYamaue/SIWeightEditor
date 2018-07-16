@@ -3039,7 +3039,6 @@ class MainWindow(qt.MainWindow):
         
     #ビューの状態を更新する
     def refresh_table_view(self):
-        '''
         #フォーカス移してテーブルの状態を更新する
         self.view_widget.setFocus()
         self.view_widget.clearFocus()
@@ -3049,11 +3048,11 @@ class MainWindow(qt.MainWindow):
         for i in range(header.count()):
             header.updateSection(i)
         '''
-        #結果リセットコマンド発行するだけでよかった
         try:
             self.weight_model.reset()
         except:
             pass
+        '''
                 
     change_flag = False
     def sld_pressed(self):
