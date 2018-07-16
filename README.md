@@ -158,15 +158,21 @@ Maya標準機能のウェイトハンマーを選択したセル頂点に対し�
 選択オブジェクトのウェイトデータをオブジェクトごとに一時ファイルとして書き出します。  
 前回出力分は上書きされます。  
 
-・Simple Weight Copy (Name Index)  
+・Simple Weight Paste (Name Index)  
 コピーしたウェイトをオブジェクト名と頂点番号で書き戻します。  
 バインド情報も書き戻すので事前バインド不要です。  
 
-・Simple Weight Copy (Name Position)※Maya2016以降  
+・Simple Weight Paste (Name Position)※Maya2016以降  
 同じくオブジェクト名と頂点座標で書き戻します。  
 頂点番号が変わった場合はこちらをご利用ください。  
 
 ![siweighteditor15](https://user-images.githubusercontent.com/28256498/42168767-dec8b5c0-7e4c-11e8-938c-0e5731ea7b87.gif)
+
+ウェイトコピー元が1つだけなら名前が違っていてもペーストできるように拡張しました。   
+複製メッシュにインデックスペーストしたり、近い形状のものにポジションペーストしたりと使い方が広がります。
+
+![siweighteditor20](https://user-images.githubusercontent.com/28256498/42734004-24f52860-8877-11e8-87cb-f34ea67bf0f9.gif)
+
 
 ### Transfer Weight Multiple
 
