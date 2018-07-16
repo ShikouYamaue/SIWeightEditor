@@ -32,6 +32,7 @@ from . import symmetrize
 from . import joint_rule_editor
 from . import go
 from . import prof
+reload(prof)
 
 import imp
 try:
@@ -50,7 +51,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.4'
+VERSION = 'r1.1.5'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -103,39 +104,6 @@ def timer(func):
 def timer(func):
     return func
     
-class LapCounter():
-    
-    lap_times = 0
-    lap_list = []
-    def __init__(self):
-        self.start = time.time()
-        
-    def count(self, string=''):
-        self.end = time.time()
-        lap_str = 'lap_time :', string, self.lap_times, ':', self.end - self.start
-        self.lap_list.append(lap_str)
-        self.lap_times += 1
-        self.start = time.time()
-        
-    def lap_print(self):
-        total_time = time.time()  - self.all_start
-        out_put_time = '{:.5f}'.format(total_time)
-        #ウィンドウに計算時間表示
-        try:
-            WINDOW.time_label.setText('- Calculation Time - '+out_put_time+' sec')
-        except:
-            pass
-            
-        if COUNTER_PRINT:#表示するかどうかをグローバル変数で管理
-            print '----------------------------------'
-            for lap_time in self.lap_list:
-                print lap_time
-            print 'total_time :', total_time
-            
-    def reset(self):
-        self.all_start = time.time()
-        self.start = time.time()
-        self.lap_list = []
         
 #イベント追加したカスタムスピンボックス
 class EditorDoubleSpinbox(QDoubleSpinBox):
@@ -439,14 +407,7 @@ class TableModel(QAbstractTableModel):
         self.header_list = influences
         self.header_color_list = header_color_list
         self._data = data
-        self.set_index()
-        
-    def set_index(self):#インデックス一覧を作る
-        rows = len(self._data)
-        columns = len(self._data[0]) if self.rowCount() else 0
-        self.indexes = [(r, c) for r, c in itertools.product(range(rows), range(columns))]
-        #print self.indexes
-        
+    
     #ヘッダーを設定する関数をオーバーライド
     def headerData(self, id, orientation, role):
         u"""見出しを返す"""
@@ -797,7 +758,7 @@ class MainWindow(qt.MainWindow):
     
     show_flag = False    
     def _init_ui(self, job_create=True):
-        self.counter = LapCounter()#ラップタイム計測クラス
+        self.counter = prof.LapCounter()#ラップタイム計測クラス
         self.init_flag=True
         sq_widget = QScrollArea(self)
         sq_widget.setWidgetResizable(True)#リサイズに中身が追従するかどうか
@@ -1240,16 +1201,16 @@ class MainWindow(qt.MainWindow):
         sub_tool_layout.addWidget(QLabel('  '))
         
         #ウェイトトランスファー
-        tip = lang.Lang(en='*Transfer_Weight_Muliple / Copy\n\nWeight Specify the transfer source mesh \nMultiple meshes can be specified', 
-                            ja=u'・Transfer_Weight_Muliple / Copy\n\nウェイト転送元のメッシュを指定します\n複数メッシュ指定可能').output()
+        tip = lang.Lang(en='*Transfer_Weight_Multiple / Copy\n\nWeight Specify the transfer source mesh \nMultiple meshes can be specified', 
+                            ja=u'・Transfer_Weight_Multiple / Copy\n\nウェイト転送元のメッシュを指定します\n複数メッシュ指定可能').output()
         self.transfer_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'transfer_copy.png', tip=tip)
         self.transfer_copy_but.clicked.connect(qt.Callback(self.weight_transfer_copy))
         sub_tool_layout.addWidget(self.transfer_copy_but)
         
         #ウェイトトランスファー
-        tip = lang.Lang(en='*Transfer_Weight_Muliple / Transfer\n\nWait transfer source Weight is transferred from the specified mesh to the selected mesh \nMultiple mesh can be specified', 
-                            ja=u'・Transfer_Weight_Muliple / Transfer\n\nウェイト転送元指定したメッシュから選択メッシュにウェイトを転送します\n複数メッシュ指定可能').output()
+        tip = lang.Lang(en='*Transfer_Weight_Multiple / Transfer\n\nWait transfer source Weight is transferred from the specified mesh to the selected mesh \nMultiple mesh can be specified', 
+                            ja=u'・Transfer_Weight_Multiple / Transfer\n\nウェイト転送元指定したメッシュから選択メッシュにウェイトを転送します\n複数メッシュ指定可能').output()
         self.transfer_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'transfer_paste.png', tip=tip)
         self.transfer_paste_but.clicked.connect(qt.Callback(self.weight_transfer_paste))
@@ -1552,7 +1513,7 @@ class MainWindow(qt.MainWindow):
     def freeze_m(self):
         freeze.main(pop_zero_poly=True)
     
-    def weight_copy(self, method='index', engin='maya', saveName='siweighteditor.copypaste'):
+    def weight_copy(self, method='index', engin='maya', saveName='simple.copypaste'):
         selection = cmds.ls(sl=True)
         skin_meshes = common.search_polygon_mesh(selection, serchChildeNode=True)
         if skin_meshes is not None:
@@ -1562,7 +1523,7 @@ class MainWindow(qt.MainWindow):
                                             engine = engin,
                                             viewmsg = True)
                                                 
-    def weight_paste(self, method='index', threshold=0.2, engin='maya', saveName='siweighteditor.copypaste'):
+    def weight_paste(self, method='index', threshold=0.2, engin='maya', saveName='simple.copypaste'):
         selection = cmds.ls(sl=True)
         skin_meshes = common.search_polygon_mesh(selection, serchChildeNode=True)
         if skin_meshes is not None:
@@ -1831,7 +1792,7 @@ class MainWindow(qt.MainWindow):
             cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
             
         self.counter.count(string='set lock attr to skin_node :')
-        self.counter.lap_print()
+        self.counter.lap_print(print_flag=COUNTER_PRINT)
             
     #ウェイトアンロック
     #@prof.profileFunction()
@@ -2243,11 +2204,19 @@ class MainWindow(qt.MainWindow):
                 for v in target_vertices:
                     vtx_name = "{0:}.vtx[{1:}]".format(node, v)#IDを頂点名に変換しておく
                     #頂点のロック情報を取得しておく
-                    try:#if v in keys比較が重いので例外処理で高速化
-                        self.lock_data_dict[self.all_rows] = [vtx_name, lock_data_dict[v]]
-                    except:
-                        pass
-                    
+                    # try:#if v in keys比較が重いので例外処理で高速化
+                        # self.lock_data_dict[self.all_rows] = [vtx_name, lock_data_dict[v]]
+                    # except:
+                        # pass
+                        
+                    #if v in lock_data_dict.keys():#比較遅い
+                        #self.lock_data_dict[self.all_rows] = [vtx_name, lock_data_dict[v]]
+                        
+                    #例外補足とあまり変わらないかちょっと早い
+                    lock_data = lock_data_dict.get(v, None)
+                    if lock_data:
+                        self.lock_data_dict[self.all_rows] = [vtx_name, lock_data]
+                        
                     self.all_editable_rows.add(self.all_rows)
                     self.v_header_list.append(v)
                     
@@ -2257,7 +2226,8 @@ class MainWindow(qt.MainWindow):
                     self._data.append(weight_list)#モデル用データに入れておく
                     
                     #ウェイトの合計、使用インフルエンス数が不正かどうかを格納しておく
-                    weight_sum = round(sum(weight_list), 10)#合計値
+                    weight_sum = round(sum(weight_list), 12)#合計値
+                    #print 'sum weights :', weight_sum
                     influence_count = all_influences_count - weight_list.count(0.0)
                     self.over_influence_limit_dict[self.all_rows] = influence_count
                     if weight_sum < 1.0:
@@ -2333,19 +2303,23 @@ class MainWindow(qt.MainWindow):
                 except Exception as e:
                     #print 'lock setting error :', e.message
                     pass
-                    
+                   
+        try:#都度メモリをきれいに
+            del self.weight_model._data
+            self.weight_model._data = {}
+        except Exception as e:
+            print e.message, 'in get set' 
         try:#都度メモリをきれいに
             self.weight_model.deleteLater()
             del self.weight_model
         except Exception as e:
-            #print e.message, 'in get set'
+            print e.message, 'in get set'
             pass
         try:
             self.sel_model.deleteLater()
             del self.sel_model
-        except:
-            pass
-            #print 'faild to delete weight model in remake :'
+        except Exception as e:
+            print e.message, 'in get set'
             
         self.weight_model = TableModel(self._data, self.view_widget, self.mesh_rows, 
                                         self.all_influences, self.v_header_list, self.inf_color_list)
@@ -2382,7 +2356,7 @@ class MainWindow(qt.MainWindow):
         
         self.counter.count('ui create model list dict :')
         
-        self.counter.lap_print()
+        self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
         
         
     #セルの選択変更があった場合に現在の選択セルを格納する
@@ -2482,7 +2456,7 @@ class MainWindow(qt.MainWindow):
                 cmds.select(vertices, r=True)
             
         self.counter.count(string='select vtx :')
-        self.counter.lap_print()
+        self.counter.lap_print(print_flag=COUNTER_PRINT)
         
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
         
@@ -2767,7 +2741,7 @@ class MainWindow(qt.MainWindow):
                 after_value = new_value
                 
         self.counter.count(string='Cell Value Calculation :')
-        self.counter.lap_print()
+        self.counter.lap_print(print_flag=COUNTER_PRINT)
                 
         #ベイク計算に入る
         self.precalculate_bake_weights()
@@ -3052,7 +3026,7 @@ class MainWindow(qt.MainWindow):
         #最後に表示状態の更新
         self.refresh_table_view()
         self.counter.count(string='Refresh UI :')
-        self.counter.lap_print()
+        self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
         
     def om_bake_skin_weight(self, realbake=True, ignoreundo=False):
         #焼きこみデータをグローバルに展開
@@ -3122,16 +3096,27 @@ class MainWindow(qt.MainWindow):
     #メモリ解放しっかり
     #ちゃんと消さないと莫大なUIデータがメモリに残り続けるので注意
     def erase_func_data(self):
-        print 'erase func data :'
+        #print self.weight_model._data
         try:
+            del self.weight_model._data#一番でかいっぽい
+            self.weight_model._data = {}
+        except Exception as e:
+            print e.message, 'in close'
+        try:
+            self.weight_model.deleteLater()
             del self.weight_model
-            del self.sel_model
-        except:
-            pass
+        except Exception as e:
+            print e.message, 'in close'
         try:
+            self.sel_model.deleteLater()
+            del self.sel_model
+        except Exception as e:
+            print e.message, 'in close'
+        try:
+            self.view_widget.deleteLater()
             del self.view_widget
-        except:
-            pass
+        except Exception as e:
+            print e.message, 'in close'
         
         try:
             del self._data
@@ -3160,8 +3145,9 @@ class MainWindow(qt.MainWindow):
             del self.filter_weight_dict
             del self.vtx_weight_dict
             del self.lock_data_dict
-        except:
-            pass
+        except Exception as e:
+            print e.message, 'in close'
+        print 'erase func data :'
             
         
 #アンドゥ時に辞書を更新しておく。

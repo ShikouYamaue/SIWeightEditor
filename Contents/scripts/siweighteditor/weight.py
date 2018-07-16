@@ -116,19 +116,31 @@ class WeightCopyPaste():
                 dstSkinCluster = dstSkinCluster[0]
                 tempSkinNode = skinMesh#親を取得するためスキンクラスタのあるノードを保存しておく
             if self.engine == 'maya':
-                # Pipeはファイル名に出来ないので変換しておく
-                meshName = str(weightFile).replace('|', '__pipe__')
-                # コロンはファイル名に出来ないので変換しておく
-                meshName = str(meshName).replace(':', '__colon__')
-                if os.path.isfile(self.filePath + '\\' + meshName + '.xml'):
+                files = os.listdir(self.filePath)
+                print files
+                if len(files) == 2:
+                    for file in files:
+                        name, ext = os.path.splitext(file)
+                        if ext == '.xml':
+                            xml_name = file
+                else:
+                    # Pipeはファイル名に出来ないので変換しておく
+                    meshName = str(weightFile).replace('|', '__pipe__')
+                    # コロンはファイル名に出来ないので変換しておく
+                    meshName = str(meshName).replace(':', '__colon__')
+                    
+                    xml_name = meshName + '.xml'
+                    
+                
+                if os.path.isfile(self.filePath + '\\' + xml_name):
                     if self.method == 'index' or self.method == 'over':
-                        cmds.deformerWeights(meshName + '.xml',
+                        cmds.deformerWeights(xml_name,
                                              im=True,
                                              method=self.method,
                                              deformer=dstSkinCluster,
                                              path=self.filePath + '\\')
                     else:
-                        cmds.deformerWeights(meshName + '.xml',
+                        cmds.deformerWeights(xml_name,
                                              im=True,
                                              deformer=dstSkinCluster,
                                              method=self.method,

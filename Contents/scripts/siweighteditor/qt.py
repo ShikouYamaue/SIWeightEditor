@@ -132,7 +132,7 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
         return ctrl_mod
         
 #フラットボタンを作って返す
-def make_flat_btton(icon=None, name='', text=200, bg=[54, 51, 51], ui_color=68, border_col=[180, 140, 30], checkable=True, w_max=None, w_min=None, push_col=120, 
+def make_flat_btton(icon=None, name='', text=200, bg=[54, 51, 51], ui_color=68, border_col=180, checkable=True, w_max=None, w_min=None, push_col=120, 
                                 h_max=None, h_min=None, policy=None, icon_size=None, tip=None, flat=True, hover=True, destroy_flag=False, context=None):
     button = RightClickButton()
     button.setText(name)
