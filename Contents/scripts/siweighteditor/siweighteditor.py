@@ -51,7 +51,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.6'
+VERSION = 'r1.1.7'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -1734,17 +1734,48 @@ class MainWindow(qt.MainWindow):
         for lock_data in self.weight_lock_data:
             if lock_data[1] == section_id:
                 #print 'unlock wt'
-                self.unlock_weight()
+                self.unlock_weight(all_lock=True, section_id=section_id)
                 break
         else:
             #print 'lock wt'
-            self.lock_weight()
+            self.lock_weight(all_lock=True, section_id=section_id)
         self.sel_model.clearSelection()
+            
+    def lock_all_vtx_weight(self, section_id=None, add=True):
+        for node in self.hl_nodes:
+            skin_cluster = self.all_skin_clusters[node]
+            vertices = self.node_vtx_dict[node]
+            #print len(vertices)
+            lock_influences = [self.all_influences[section_id]]
+            pre_lock_data_dict = self.decode_lock_data(skin_cluster)
+            for vtx in vertices:
+                after_lock_influences = []
+                try:#キーの有無を比較すると重かったので例外処理で乗り切る
+                    pre_lock_influences = pre_lock_data_dict[vtx]
+                except Exception as e:
+                    pre_lock_influences = []
+                    pass
+                if add:
+                    after_lock_influences = list(set(pre_lock_influences+lock_influences))
+                else:
+                    after_lock_influences = list(set(pre_lock_influences)-set(lock_influences))
+                pre_lock_data_dict[vtx] = after_lock_influences
+            new_lock_data_list = self.encode_lock_data(pre_lock_data_dict)
+            if not new_lock_data_list:
+                try:
+                    cmds.deleteAttr(skin_cluster+'.'+self.lock_attr_name)
+                except Exception as e:
+                    print 'clear lock error :', skin_cluster, e.message
+                    pass
+            else:
+                cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, 
+                            type='stringArray', 
+                            *([len(new_lock_data_list)] + new_lock_data_list) )
             
     #ウェイトロック
     #@prof.profileFunction()
     @timer
-    def lock_weight(self):
+    def lock_weight(self, all_lock=False, section_id=None):
         self.counter.reset()
         
         skin_vtx_dict = defaultdict(lambda : [])
@@ -1775,29 +1806,32 @@ class MainWindow(qt.MainWindow):
             
         self.counter.count(string='lock cell :')
         
-        #ロック情報を文字配列としてスキンクラスタのカスタムアトリビュートに格納
-        for skin_cluster, vertices in skin_vtx_dict.items():
-            new_lock_data_list = []
-            pre_lock_data_dict = self.decode_lock_data(skin_cluster)
-            
-            for vtx in vertices:
-                lock_influences = vtx_lock_dict[vtx]
-                try:#キーの有無を比較すると重かったので例外処理で乗り切る
-                    pre_lock_influences = pre_lock_data_dict[vtx]
-                    lock_influences = list(set(lock_influences+pre_lock_influences))
-                except:
-                    pass
-                pre_lock_data_dict[vtx] = lock_influences
-            new_lock_data_list = self.encode_lock_data(pre_lock_data_dict)
-            cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
-            
+        if all_lock:
+            self.lock_all_vtx_weight(section_id=section_id, add=True)
+        else:
+            #ロック情報を文字配列としてスキンクラスタのカスタムアトリビュートに格納
+            for skin_cluster, vertices in skin_vtx_dict.items():
+                new_lock_data_list = []
+                pre_lock_data_dict = self.decode_lock_data(skin_cluster)
+                
+                for vtx in vertices:
+                    lock_influences = vtx_lock_dict[vtx]
+                    try:#キーの有無を比較すると重かったので例外処理で乗り切る
+                        pre_lock_influences = pre_lock_data_dict[vtx]
+                        lock_influences = list(set(lock_influences+pre_lock_influences))
+                    except:
+                        pass
+                    pre_lock_data_dict[vtx] = lock_influences
+                new_lock_data_list = self.encode_lock_data(pre_lock_data_dict)
+                cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
+                
         self.counter.count(string='set lock attr to skin_node :')
         self.counter.lap_print(print_flag=COUNTER_PRINT)
             
     #ウェイトアンロック
     #@prof.profileFunction()
     @timer
-    def unlock_weight(self):
+    def unlock_weight(self, all_lock=False, section_id=None):
         skin_vtx_dict = defaultdict(lambda : [])
         vtx_lock_dict = defaultdict(lambda : [])
         for cell_id in self.selected_items:
@@ -1827,24 +1861,31 @@ class MainWindow(qt.MainWindow):
             #まとめて処理するためにいろいろ情報を整理して格納
             skin_vtx_dict[skin_cluster] += [vtx]
             vtx_lock_dict[vtx] += [rock_influence]
-        #ロック情報を文字配列としてスキンクラスタのカスタムアトリビュートに格納
-        for skin_cluster, vertices in skin_vtx_dict.items():
-            new_lock_data_list = []
-            pre_lock_data_dict = self.decode_lock_data(skin_cluster)
-            for vtx in vertices:
-                lock_influences = vtx_lock_dict[vtx]
-                try:
-                    pre_lock_influences = pre_lock_data_dict[vtx]
-                    lock_influences = list(set(pre_lock_influences)-set(lock_influences))
-                except:
-                    pass
-                pre_lock_data_dict[vtx] = lock_influences
-            new_lock_data_list = self.encode_lock_data(pre_lock_data_dict)
-            if not new_lock_data_list:
-                self.clear_lock_weight()
-            else:
-                cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
-            
+        if all_lock:
+            self.lock_all_vtx_weight(section_id=section_id, add=False)
+        else:
+            #ロック情報を文字配列としてスキンクラスタのカスタムアトリビュートに格納
+            for skin_cluster, vertices in skin_vtx_dict.items():
+                new_lock_data_list = []
+                pre_lock_data_dict = self.decode_lock_data(skin_cluster)
+                for vtx in vertices:
+                    lock_influences = vtx_lock_dict[vtx]
+                    try:
+                        pre_lock_influences = pre_lock_data_dict[vtx]
+                        lock_influences = list(set(pre_lock_influences)-set(lock_influences))
+                    except:
+                        pass
+                    pre_lock_data_dict[vtx] = lock_influences
+                new_lock_data_list = self.encode_lock_data(pre_lock_data_dict)
+                if not new_lock_data_list:
+                    try:
+                        cmds.deleteAttr(skin_cluster+'.'+self.lock_attr_name)
+                    except Exception as e:
+                        print 'clear lock error :', skin_cluster, e.message
+                        pass
+                else:
+                    cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
+                
             
     #アトリビュートに格納する形式にロックデータをエンコードする
     def encode_lock_data(self, lock_dict):
@@ -2082,7 +2123,8 @@ class MainWindow(qt.MainWindow):
             self.hilite_flag = False
             return
             
-        self.disable_joint_override()
+        if self.joint_hl_but.isChecked():
+            self.disable_joint_override()
         
         self.counter.reset()
         
@@ -2495,7 +2537,7 @@ class MainWindow(qt.MainWindow):
             try:
                 cmds.setAttr(influence + '.overrideEnabled', 0)
             except Exception as e:
-                print e.message
+                #print e.message
                 self.set_message(msg='- Joint Hilite Error : Override attr still locked -', error=True)
                 pass
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
@@ -2520,7 +2562,7 @@ class MainWindow(qt.MainWindow):
             try:
                 cmds.setAttr(influence + '.overrideEnabled', self.joint_override_dict[influence])
             except Exception as e:
-                print e.message
+                #print e.message
                 self.set_message(msg='- Joint Unhilite Error : Override attr still locked -', error=True)
                 pass
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
@@ -2610,6 +2652,7 @@ class MainWindow(qt.MainWindow):
     #入力値をモードに合わせてセルの値と合算、セルに値を戻す
     caluc_times = 0
     editing_count = 0
+    @timer
     def calc_cell_value(self, from_spinbox=False, from_input_box=False, from_slider=False):
         self.from_spinbox = from_spinbox
         
@@ -2741,7 +2784,6 @@ class MainWindow(qt.MainWindow):
                 after_value = new_value
                 
         self.counter.count(string='Cell Value Calculation :')
-        self.counter.lap_print(print_flag=COUNTER_PRINT)
                 
         #ベイク計算に入る
         self.precalculate_bake_weights()
@@ -2749,13 +2791,14 @@ class MainWindow(qt.MainWindow):
         #インプットボックスの値を変更すると以前のキャッシュデータに影響があるのでベイク後に変更する
         self.weight_input.setValue(after_value*MAXIMUM_WEIGHT)#UIのスピンボックスに数値反映
         
+        self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
         
     #変更されたウェイト事前計算する
     #@prof.profileFunction()
     @timer
     def precalculate_bake_weights(self, realbake=True, ignoreundo=False, enforce=0, round_digit=None):
         #print 'precalculate_bake_weights : '
-        self.counter.reset()
+        #self.counter.reset()
         #enforce-1は強制正規化フラッグ扱い
         if round_digit:#丸めの時は正規化しない
             norm_flag = False
@@ -3026,7 +3069,7 @@ class MainWindow(qt.MainWindow):
         #最後に表示状態の更新
         self.refresh_table_view()
         self.counter.count(string='Refresh UI :')
-        self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
+        self.counter.lap_print(print_flag=COUNTER_PRINT)
         
     def om_bake_skin_weight(self, realbake=True, ignoreundo=False):
         #焼きこみデータをグローバルに展開
