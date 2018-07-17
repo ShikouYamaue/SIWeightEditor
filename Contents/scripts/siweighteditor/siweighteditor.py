@@ -2513,8 +2513,14 @@ class MainWindow(qt.MainWindow):
             
     def store_infulence_override_color(self):
         self.joint_override_dict = {}
+        self.joint_override_mode_dict = {}
+        self.joint_override_color_dict = {}
         for inf in self.all_influences:
             self.joint_override_dict[inf] = cmds.getAttr(inf + '.overrideEnabled')
+            #オーバライドをインデクス指定かRGB指定か
+            self.joint_override_mode_dict[inf] = cmds.getAttr(inf + '.overrideRGBColors')
+            #オーバーライドカラー設定
+            self.joint_override_color_dict[inf] = cmds.getAttr(inf + '.overrideColor')
             
     def hilite_joints(self):
         cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
@@ -2526,16 +2532,25 @@ class MainWindow(qt.MainWindow):
         for i, influence in enumerate(self.all_influences):
             try:
                 if i in self.sel_columns:
-                    cmds.setAttr(influence+'.useObjectColor', 2)
-                    cmds.setAttr(influence+'.wireColorR', 1)
-                    cmds.setAttr(influence+'.wireColorG', 1)
-                    cmds.setAttr(influence+'.wireColorB', 0.9)
+                    if MAYA_VER >= 2016:
+                        cmds.setAttr(influence+'.useObjectColor', 2)
+                        cmds.setAttr(influence+'.wireColorR', 1)
+                        cmds.setAttr(influence+'.wireColorG', 1)
+                        cmds.setAttr(influence+'.wireColorB', 0.9)
+                    else:
+                        cmds.setAttr(influence + '.overrideEnabled', 1)
+                        cmds.setAttr(influence + '.overrideRGBColors', 0)
+                        cmds.setAttr(influence + '.overrideColor', 16)
                 else:
-                    cmds.setAttr(influence+'.useObjectColor', 1)
+                    if MAYA_VER >= 2016:
+                        cmds.setAttr(influence+'.useObjectColor', 1)
+                    else:
+                        cmds.setAttr(influence + '.overrideColor', 0)
             except:
                 pass
             try:
-                cmds.setAttr(influence + '.overrideEnabled', 0)
+                if MAYA_VER >= 2016:
+                    cmds.setAttr(influence + '.overrideEnabled', 0)
             except Exception as e:
                 #print e.message
                 self.set_message(msg='- Joint Hilite Error : Override attr still locked -', error=True)
@@ -2552,19 +2567,26 @@ class MainWindow(qt.MainWindow):
     def disable_joint_override(self):
         cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
         for influence in self.all_influences:
-            try:
-                cmds.setAttr(influence+'.useObjectColor', 1)
-                cmds.setAttr(influence+'.wireColorR', 0.5)
-                cmds.setAttr(influence+'.wireColorG', 0.5)
-                cmds.setAttr(influence+'.wireColorB', 0.5)
+            try:#オブジェクトカラー設定を戻す
+                if MAYA_VER >= 2016:
+                    cmds.setAttr(influence+'.useObjectColor', 1)
+                    cmds.setAttr(influence+'.wireColorR', 0.5)
+                    cmds.setAttr(influence+'.wireColorG', 0.5)
+                    cmds.setAttr(influence+'.wireColorB', 0.5)
             except:
                 pass
-            try:
+            try:#オーバーライド設定を戻す
                 cmds.setAttr(influence + '.overrideEnabled', self.joint_override_dict[influence])
             except Exception as e:
                 #print e.message
                 self.set_message(msg='- Joint Unhilite Error : Override attr still locked -', error=True)
                 pass
+            if MAYA_VER <= 2015:#2015以下はオーバーライドカラー設定も戻す
+                try:#オーバーライド設定を戻す
+                    cmds.setAttr(influence + '.overrideRGBColors', self.joint_override_mode_dict[influence])
+                    cmds.setAttr(influence + '.overrideColor', self.joint_override_color_dict[influence])
+                except:
+                    pass
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
         
     joint_tool = 0
