@@ -123,6 +123,11 @@ nsrt各ボタン　→　UIのジョイントカラム右クリックすると�
 
 ![siweighteditor8](https://user-images.githubusercontent.com/28256498/41661699-3fc866b2-74da-11e8-969c-1da1644da3a7.gif)
 
+Lock/Unlockボタン右クリックで選択セルのインフルエンスの全頂点ロック機能を追加  
+選択状態、表示状態によらずメッシュ全体でインフルエンスロックがかけられます。  
+
+![siweighteditor22](https://user-images.githubusercontent.com/28256498/43036231-481ae026-8d38-11e8-857b-5279265829b2.gif)
+
 ## サブツール
 ウェイト調整で重宝する機能をサブツール群としてまとめました  
 
