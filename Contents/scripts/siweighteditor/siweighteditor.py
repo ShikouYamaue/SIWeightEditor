@@ -1010,15 +1010,16 @@ class MainWindow(qt.MainWindow):
         lock_widget.setMinimumWidth(but_w*3+space)
         lock_widget.setMaximumWidth(but_w*3+space)
         lock_widget.setMaximumHeight(WIDGET_HEIGHT)
-        tip = lang.Lang(en='Lock selected weights',  ja=u'選択ウェイトのロック').output()
+        tip = lang.Lang(en='Lock selected weights\nRight click to lock influence of all vertices', 
+                                ja=u'選択ウェイトのロック\n右クリックで全頂点のインフルエンスロック').output()
         self.weight_lock_but = qt.make_flat_btton(name='Lock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Unlock selected weights\nRight click to lock influence of all vertices',  
-                                ja=u'選択ウェイトのロック解除\n右クリックで全頂点のインフルエンスロック').output()
+        tip = lang.Lang(en='Unlock selected weights\nRight click to unlock influence of all vertices',  
+                                ja=u'選択ウェイトのロック解除\n右クリックで全頂点のインフルエンスアンロック').output()
         self.weight_unlock_but = qt.make_flat_btton(name='Unlock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Unlock selected weights\nRight click to unlock influence of all vertices',  
-                                ja=u'すべてのウェイトロックの解除\n右クリックで全頂点のインフルエンスアンロック').output()
+        tip = lang.Lang(en='Unlock selected weights',  
+                                ja=u'すべてのウェイトロックの解除').output()
         self.weight_lock_clear_but = qt.make_flat_btton(name='Clear locks', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         self.weight_lock_but.clicked.connect(self.lock_weight)
