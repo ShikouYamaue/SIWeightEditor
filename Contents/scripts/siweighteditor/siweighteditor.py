@@ -3211,11 +3211,11 @@ class MainWindow(qt.MainWindow):
     closed_flag = False
     def closeEvent(self, e):
         print 'window closed :'
+        self.disable_joint_override()
         self.erase_func_data()
         self.closed_flag=True
         self.remove_job()
         self.save_window_data()
-        self.disable_joint_override()
         self.deleteLater()
         
     #メモリ解放しっかり
