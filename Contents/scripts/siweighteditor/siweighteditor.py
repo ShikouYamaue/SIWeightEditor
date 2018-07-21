@@ -51,7 +51,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.7'
+VERSION = 'r1.1.8'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -1013,14 +1013,18 @@ class MainWindow(qt.MainWindow):
         tip = lang.Lang(en='Lock selected weights',  ja=u'選択ウェイトのロック').output()
         self.weight_lock_but = qt.make_flat_btton(name='Lock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Unlock selected weights',  ja=u'選択ウェイトのロック解除').output()
+        tip = lang.Lang(en='Unlock selected weights\nRight click to lock influence of all vertices',  
+                                ja=u'選択ウェイトのロック解除\n右クリックで全頂点のインフルエンスロック').output()
         self.weight_unlock_but = qt.make_flat_btton(name='Unlock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Unlock selected weights',  ja=u'すべてのウェイトロックの解除').output()
+        tip = lang.Lang(en='Unlock selected weights\nRight click to unlock influence of all vertices',  
+                                ja=u'すべてのウェイトロックの解除\n右クリックで全頂点のインフルエンスアンロック').output()
         self.weight_lock_clear_but = qt.make_flat_btton(name='Clear locks', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         self.weight_lock_but.clicked.connect(self.lock_weight)
+        self.weight_lock_but.rightClicked.connect(self.lock_all_rows)
         self.weight_unlock_but.clicked.connect(self.unlock_weight)
+        self.weight_unlock_but.rightClicked.connect(lambda : self.lock_all_rows(lock=False))
         self.weight_lock_clear_but.clicked.connect(self.clear_lock_weight)
         lock_layout.addWidget(self.weight_lock_but)
         lock_layout.addWidget(self.weight_unlock_but)
@@ -1734,19 +1738,19 @@ class MainWindow(qt.MainWindow):
         for lock_data in self.weight_lock_data:
             if lock_data[1] == section_id:
                 #print 'unlock wt'
-                self.unlock_weight(all_lock=True, section_id=section_id)
+                self.unlock_weight(all_lock=True, section_ids=[section_id])
                 break
         else:
             #print 'lock wt'
-            self.lock_weight(all_lock=True, section_id=section_id)
+            self.lock_weight(all_lock=True, section_ids=[section_id])
         self.sel_model.clearSelection()
             
-    def lock_all_vtx_weight(self, section_id=None, add=True):
+    def lock_all_vtx_weight(self, section_ids=[], add=True):
         for node in self.hl_nodes:
             skin_cluster = self.all_skin_clusters[node]
             vertices = self.node_vtx_dict[node]
             #print len(vertices)
-            lock_influences = [self.all_influences[section_id]]
+            lock_influences = [self.all_influences[section_id] for section_id in section_ids]
             pre_lock_data_dict = self.decode_lock_data(skin_cluster)
             for vtx in vertices:
                 after_lock_influences = []
@@ -1772,18 +1776,53 @@ class MainWindow(qt.MainWindow):
                             type='stringArray', 
                             *([len(new_lock_data_list)] + new_lock_data_list) )
             
+    def lock_all_rows(self, lock=True):
+        column_count = self.weight_model.columnCount()
+        selected_item = self.sel_model.currentIndex()
+        new_indexes = []
+        section_ids = []
+        for index in range(column_count):
+            if self.sel_model.columnIntersectsSelection(index, selected_item):
+                section_ids.append(index)
+                column_indexes = [[row, index] for row in self.all_editable_rows]
+                new_indexes += column_indexes
+        if lock:
+            self.lock_weight(all_lock=True, section_ids=section_ids, indexes=new_indexes)
+        else:
+            self.unlock_weight(all_lock=True, section_ids=section_ids, indexes=new_indexes)
+        self.refresh_table_view()
+        
+    def unlock_all_rows(self):
+        column_count = self.weight_model.columnCount()
+        selected_item = self.sel_model.currentIndex()
+        new_indexes = []
+        for index in range(column_count):
+            if self.sel_model.columnIntersectsSelection(index, selected_item):
+                column_indexes = [[row, index] for row in self.all_editable_rows]
+                new_indexes += column_indexes
+        self.unlock_weight(all_lock=False, section_ids=index, indexes=new_indexes)
+        self.refresh_table_view()
+        
     #ウェイトロック
     #@prof.profileFunction()
     @timer
-    def lock_weight(self, all_lock=False, section_id=None):
+    def lock_weight(self, all_lock=False, section_ids=None, indexes=None):
         self.counter.reset()
         
         skin_vtx_dict = defaultdict(lambda : [])
         vtx_lock_dict = defaultdict(lambda : [])
-        for cell_id in self.selected_items:
+        if not indexes:
+            target_cells = self.selected_items
+        else:
+            target_cells = indexes
+        for cell_id in target_cells:
             #セルの色替え
-            row = cell_id.row()
-            column = cell_id.column()
+            if not indexes:
+                row = cell_id.row()
+                column = cell_id.column()
+            else:
+                row = cell_id[0]
+                column = cell_id[1]
             index = (row, column)
             self.weight_lock_data.add(index)
             self.weight_model.weight_lock_cells.add(index)
@@ -1797,8 +1836,11 @@ class MainWindow(qt.MainWindow):
             node = row_data[6]
             node_influence_id_list = self.node_influence_id_list_dict[node]
             rock_id = node_influence_id_list[column]#ロックするインフルエンスのID
+            try:
+                rock_influence = influences[rock_id]#ロックするインフルエンス
+            except:
+                continue
             self.vtx_lock_data_dict[vtx_name].add(rock_id)#ロックインフルエンス辞書に追加
-            rock_influence = influences[rock_id]#ロックするインフルエンス
             
             #まとめて処理するためにいろいろ情報を整理して格納
             skin_vtx_dict[skin_cluster] += [vtx]
@@ -1807,7 +1849,7 @@ class MainWindow(qt.MainWindow):
         self.counter.count(string='lock cell :')
         
         if all_lock:
-            self.lock_all_vtx_weight(section_id=section_id, add=True)
+            self.lock_all_vtx_weight(section_ids=section_ids, add=True)
         else:
             #ロック情報を文字配列としてスキンクラスタのカスタムアトリビュートに格納
             for skin_cluster, vertices in skin_vtx_dict.items():
@@ -1831,12 +1873,21 @@ class MainWindow(qt.MainWindow):
     #ウェイトアンロック
     #@prof.profileFunction()
     @timer
-    def unlock_weight(self, all_lock=False, section_id=None):
+    def unlock_weight(self, all_lock=False, section_ids=None, indexes=None):
         skin_vtx_dict = defaultdict(lambda : [])
         vtx_lock_dict = defaultdict(lambda : [])
-        for cell_id in self.selected_items:
-            row = cell_id.row()
-            column = cell_id.column()
+        if not indexes:
+            target_cells = self.selected_items
+        else:
+            target_cells = indexes
+        for cell_id in target_cells:
+            #セルの色替え
+            if not indexes:
+                row = cell_id.row()
+                column = cell_id.column()
+            else:
+                row = cell_id[0]
+                column = cell_id[1]
             index = (row, column)
             try:
                 self.weight_lock_data.remove(index)
@@ -1853,8 +1904,11 @@ class MainWindow(qt.MainWindow):
             influences =  row_data[2]
             vtx_name = row_data[5]
             node = row_data[6]
+            try:
+                rock_influence = influences[rock_id]#ロックするインフルエンス
+            except:
+                continue
             node_influence_id_list = self.node_influence_id_list_dict[node]
-            rock_id = node_influence_id_list[column]#ロックするインフルエンスのID
             if rock_id in self.vtx_lock_data_dict[vtx_name]:
                 self.vtx_lock_data_dict[vtx_name].remove(rock_id)#ロックインフルエンス辞書から削除
             rock_influence = influences[rock_id]#ロックするインフルエンス
@@ -1862,7 +1916,7 @@ class MainWindow(qt.MainWindow):
             skin_vtx_dict[skin_cluster] += [vtx]
             vtx_lock_dict[vtx] += [rock_influence]
         if all_lock:
-            self.lock_all_vtx_weight(section_id=section_id, add=False)
+            self.lock_all_vtx_weight(section_ids=section_ids, add=False)
         else:
             #ロック情報を文字配列としてスキンクラスタのカスタムアトリビュートに格納
             for skin_cluster, vertices in skin_vtx_dict.items():
