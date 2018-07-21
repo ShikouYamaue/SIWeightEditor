@@ -277,8 +277,6 @@ GoMayaExportで出力したオブジェクトを読み込みます。
 ![siweighteditor9](https://user-images.githubusercontent.com/28256498/41662504-47b089fc-74dc-11e8-9bd5-aa5294c20491.gif)
 
 ## Futures
-・現状20000triangleくらいからもっさりしますが、これから更なる高速化を目指しています。  
-・有効な機能を絞った高速編集モードをつけるかも  
 ・固定値入力ボタンつけるかも  
 ・UIの色指定機能つけるかも  
 ・Show Bad の挙動を少し変更するかも  
