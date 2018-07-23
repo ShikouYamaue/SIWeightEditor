@@ -51,7 +51,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.8'
+VERSION = 'r1.1.9'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -2173,11 +2173,12 @@ class MainWindow(qt.MainWindow):
             #print e.message
             #print 'UI Allready Closed :'
             return
-        self.node_vtx_dict = node_vtx_dict
         if self.hilite_flag:
             self.hilite_flag = False
             return
             
+        self.node_vtx_dict = node_vtx_dict
+        
         if self.joint_hl_but.isChecked():
             self.disable_joint_override()
         
