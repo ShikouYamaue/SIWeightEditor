@@ -51,7 +51,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.1.9'
+VERSION = 'r1.2.0'
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -359,6 +359,8 @@ class MyHeaderView(QHeaderView):
         return QSize(0, self._get_text_width() + 2 * self._margin)
 
     def _get_text_width(self):
+        if self.model() is None:
+            return 0
         width_list = [self._metrics.width(self._get_data(i)) for i in range(0, self.model().columnCount())] or [0]
         max_width = max(width_list) *1.1
         return max_width
@@ -623,12 +625,19 @@ class Option():
         for i in range(0, 800, 50):
             WINDOW.resize(1000 - i, 800)
         WINDOW.resize(WINDOW.sw, WINDOW.sh)
-        WINDOW.show()
+        #print WINDOW.area, WINDOW.floating 
+        WINDOW.show(dockable=WINDOW.dockable,
+                            area=WINDOW.area[0],
+                            floating=WINDOW.floating ,
+                            width=WINDOW.sw,
+                            height=WINDOW.sh)
+        WINDOW.move(WINDOW.pw-8, WINDOW.ph-31)
+        print 'move window :', WINDOW.pw-8, WINDOW.ph-31
         #WINDOW.get_set_skin_weight()
         #起動時に取得実行
         #cmds.scriptJob(ro=True, e=("idle", lambda : WINDOW.get_set_skin_weight()), protected=True)
         
-class MainWindow(qt.MainWindow):
+class MainWindow(qt.DockWindow):
     selection_mode = 'tree'
     filter_type = 'scene'
     icon_path = os.path.join(os.path.dirname(__file__), 'icon/')
@@ -676,12 +685,16 @@ class MainWindow(qt.MainWindow):
                     self.search_mode = save_data['search_mode']
                     self.darken_value = save_data['darken_value']
                     self.interactive = save_data['interactive']
+                    self.dockable = save_data['dockable']
+                    self.floating = save_data['floating']
+                    self.area=save_data['area'],
             except Exception as e:
                 self.init_save_data()
         else:
             self.init_save_data()
             
     def init_save_data(self):
+        print 'data load error , init save data :'
         self.area = None
         self.pw = 200
         self.ph = 200
@@ -706,13 +719,20 @@ class MainWindow(qt.MainWindow):
         self.search_mode = 0
         self.darken_value = 150
         self.interactive = False
+        self.dockable = False
+        self.floating = True
+        self.area = None
     
     def save_window_data(self, display=True):
         if not os.path.exists(self.dir_path):
             os.makedirs(self.dir_path)
         save_data = {}
-        dock_dtrl = self.parent()
-        pos = self.pos()
+        if self.isDockable() is True:
+            dock_dtrl = self.parent()
+            pos = dock_dtrl.mapToGlobal(QPoint(0, 0))
+        else:
+            pos = self.pos()
+        print 'check pos :', pos
         size = self.size()
         save_data['pw'] = pos.x()+8
         save_data['ph'] = pos.y()+31
@@ -737,6 +757,9 @@ class MainWindow(qt.MainWindow):
         save_data['search_mode'] = self.search_but_group.checkedId()
         save_data['darken_value'] = self.zero_darken.value()
         save_data['interactive'] = self.interactive_but.isChecked()
+        save_data['dockable'] = self.docking_but.isChecked()
+        save_data['floating'] = self.isFloating()
+        save_data['area'] = self.dockArea()
         if not os.path.exists(self.dir_path):
             os.makedirs(self.dir_path)
         with open(self.w_file, 'w') as f:
@@ -1470,6 +1493,15 @@ class MainWindow(qt.MainWindow):
         self.zero_darken.setMinimumWidth(35)
         msg_layout.addWidget(self.zero_darken)
         
+        but_w = 80
+        tip = lang.Lang(en='Change whether dockable to Maya UI',  
+                                ja=u'Maya UIにドッキング可能かどうかを変更する').output()
+        self.docking_but = qt.make_flat_btton(name='Dock Enable', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                                flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
+        self.docking_but.clicked.connect(self.change_dockable)
+        self.docking_but.setChecked(self.dockable)
+        msg_layout.addWidget(self.docking_but)
+        
         msg_layout.addWidget(qt.make_v_line())
         
         tip = lang.Lang(en='Show latest release page', ja=u'最新リリースページを表示').output()
@@ -1507,6 +1539,16 @@ class MainWindow(qt.MainWindow):
         self.zero_cell_darken()
         self.get_set_skin_weight()
         
+    #MayaUIにドッキングかのうかどうかを変更
+    def change_dockable(self):
+        if self.docking_but.isChecked():
+            self.show(dockable=True,
+                            area=None,
+                            floating=True ,
+                            width=self.width(),
+                            height=self.height())
+        else:
+            Option()
         
     def open_joint_rule_editor(self):
         joint_rule_editor.Option()
@@ -2418,9 +2460,11 @@ class MainWindow(qt.MainWindow):
             del self.sel_model
         except Exception as e:
             print e.message, 'in get set'
-            
-        self.weight_model = TableModel(self._data, self.view_widget, self.mesh_rows, 
-                                        self.all_influences, self.v_header_list, self.inf_color_list)
+        try:
+            self.weight_model = TableModel(self._data, self.view_widget, self.mesh_rows, 
+                                            self.all_influences, self.v_header_list, self.inf_color_list)
+        except:
+            return
         self.weight_model.over_influence_limit_dict = self.over_influence_limit_dict
         self.weight_model.under_weight_rows = self.under_weight_rows
         self.weight_model.over_weight_rows = self.over_weight_rows
@@ -3218,6 +3262,9 @@ class MainWindow(qt.MainWindow):
         self.remove_job()
         self.save_window_data()
         self.deleteLater()
+        
+    def dockCloseEventTriggered(self):
+        self.closeEvent(None)
         
     #メモリ解放しっかり
     #ちゃんと消さないと莫大なUIデータがメモリに残り続けるので注意
