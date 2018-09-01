@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from maya import cmds
 from maya import mel
+import maya.OpenMayaUI as omui
+
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 import maya.OpenMaya as om
@@ -51,7 +53,9 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.0'
+VERSION = 'r1.2.1'
+
+TITLE = "SIWeightEditor_" + VERSION
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -610,34 +614,37 @@ def model_iter(model, parent_index=QModelIndex(), col_iter=True):
         if not index.isValid():
             break
             
-class Option():
-    def __init__(self):
+class OptionWindow():
+    def __init__(self, offset=False):
         global WINDOW
         try:
+            #print 'widget visivle :', WINDOW.isVisible() 
             WINDOW.closeEvent(None)
             WINDOW.close()
         except Exception as e:
-            print e.message
-        WINDOW = MainWindow()
+            print 'window close error :', e.message
+        WINDOW = WeightEditorWindow()
         WINDOW.init_flag=False
-        WINDOW.move(WINDOW.pw-8, WINDOW.ph-31)
+        if WINDOW.dockable or offset:
+            WINDOW.move(WINDOW.pw-8, WINDOW.ph-31)
+        else:
+            WINDOW.move(WINDOW.pw, WINDOW.ph)
         #ウィンドウ幅が狭くても正しくボタン再配置できるように大きいサイズから縮めておく
         for i in range(0, 800, 50):
             WINDOW.resize(1000 - i, 800)
         WINDOW.resize(WINDOW.sw, WINDOW.sh)
-        #print WINDOW.area, WINDOW.floating 
+        #if WINDOW.area is not None:
+            #WINDOW.area = WINDOW.area[0]
         WINDOW.show(dockable=WINDOW.dockable,
-                            area=WINDOW.area[0],
+                            area=WINDOW.area,
                             floating=WINDOW.floating ,
                             width=WINDOW.sw,
                             height=WINDOW.sh)
-        WINDOW.move(WINDOW.pw-8, WINDOW.ph-31)
-        print 'move window :', WINDOW.pw-8, WINDOW.ph-31
         #WINDOW.get_set_skin_weight()
         #起動時に取得実行
         #cmds.scriptJob(ro=True, e=("idle", lambda : WINDOW.get_set_skin_weight()), protected=True)
         
-class MainWindow(qt.DockWindow):
+class WeightEditorWindow(qt.DockWindow):
     selection_mode = 'tree'
     filter_type = 'scene'
     icon_path = os.path.join(os.path.dirname(__file__), 'icon/')
@@ -655,7 +662,7 @@ class MainWindow(qt.DockWindow):
         #セーブデータが無いかエラーした場合はデフォファイルを作成
         if init_pos:
             self.init_save_data()
-            return
+            return None
         #読み込み処理
         if os.path.exists(self.w_file):#保存ファイルが存在したら
             try:
@@ -687,11 +694,14 @@ class MainWindow(qt.DockWindow):
                     self.interactive = save_data['interactive']
                     self.dockable = save_data['dockable']
                     self.floating = save_data['floating']
-                    self.area=save_data['area'],
+                    self.area=save_data['area']
+                    return save_data
             except Exception as e:
                 self.init_save_data()
+                return None
         else:
             self.init_save_data()
+            return None
             
     def init_save_data(self):
         print 'data load error , init save data :'
@@ -734,8 +744,8 @@ class MainWindow(qt.DockWindow):
             pos = self.pos()
         print 'check pos :', pos
         size = self.size()
-        save_data['pw'] = pos.x()+8
-        save_data['ph'] = pos.y()+31
+        save_data['pw'] = pos.x()
+        save_data['ph'] = pos.y()
         save_data['sw'] = size.width()
         save_data['sh'] = size.height()
         save_data['hilite'] = self.highlite_but.isChecked()
@@ -764,6 +774,7 @@ class MainWindow(qt.DockWindow):
             os.makedirs(self.dir_path)
         with open(self.w_file, 'w') as f:
             json.dump(save_data, f)
+        print 'save window size :',  save_data['sw'],  save_data['sh']
         
     pre_selection_node = []
     def __init__(self, parent = None, init_pos=False):
@@ -787,7 +798,10 @@ class MainWindow(qt.DockWindow):
         sq_widget.setWidgetResizable(True)#リサイズに中身が追従するかどうか
         sq_widget.setFocusPolicy(Qt.NoFocus)#スクロールエリアをフォーカスできるかどうか
         sq_widget.setMinimumHeight(1)#ウィンドウの最小サイズ
-        self.setWindowTitle(u'- SI Weight Editor / ver_'+VERSION+' -')
+        #self.setWindowTitle(u'- SI Weight Editor / ver_'+VERSION+' -')
+        self.setWindowTitle(TITLE)
+        self.setObjectName(TITLE)
+        
         self.setCentralWidget(sq_widget)
         
         self.main_layout = QVBoxLayout()
@@ -1095,6 +1109,8 @@ class MainWindow(qt.DockWindow):
         self.mode_but_group.addButton(self.abs_but, 0)
         self.mode_but_group.addButton(self.add_but, 1)
         self.mode_but_group.addButton(self.add_par_but, 2)
+        if self.mode < 0:
+            self.mode = 0
         self.mode_but_group.button(self.mode).setChecked(True)
         mode_layout.addWidget(self.abs_but)
         mode_layout.addWidget(self.add_but)
@@ -1423,6 +1439,9 @@ class MainWindow(qt.DockWindow):
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
         self.search_but_group.addButton(self.refine_but , 0)
         self.search_but_group.addButton(self.add_but , 1)
+        #print 'search  mode :', self.search_mode
+        if self.search_mode < 0:
+            self.search_mode = 0
         self.search_but_group.button(self.search_mode).setChecked(True)
         self.search_but_group.buttonClicked.connect(lambda : self.get_set_skin_weight())
         seach_layout.addWidget(self.refine_but)
@@ -1541,14 +1560,30 @@ class MainWindow(qt.DockWindow):
         
     #MayaUIにドッキングかのうかどうかを変更
     def change_dockable(self):
-        if self.docking_but.isChecked():
-            self.show(dockable=True,
-                            area=None,
-                            floating=True ,
-                            width=self.width(),
-                            height=self.height())
+        if MAYA_VER <= 2016:
+            if self.docking_but.isChecked():
+                self.show(dockable=True,
+                                area=None,
+                                floating=True ,
+                                width=self.width(),
+                                height=self.height())
+            else:
+                    OptionWindow(offset=True)
         else:
-            Option()
+            if self.docking_but.isChecked():
+                try:
+                    cmds.deleteUI(TITLE+'WorkspaceControl')
+                except:
+                    pass
+                self.save_window_data()
+                self.show(dockable=True,
+                                area=None,
+                                floating=True ,
+                                width=self.width(),
+                                height=self.height())
+            else:
+                self.save_window_data()
+                Option()
         
     def open_joint_rule_editor(self):
         joint_rule_editor.Option()
@@ -2161,6 +2196,7 @@ class MainWindow(qt.DockWindow):
         
     pre_row_count = 0
     def re_arrangement_but(self, win_x, grid_v, but_list, loop):
+        #print ' re_arrangement_but :'
         if loop >100:
             return
         if not but_list:
@@ -3254,16 +3290,19 @@ class MainWindow(qt.DockWindow):
             select_job = None
             
     closed_flag = False
+    save_flag = True
     def closeEvent(self, e):
         print 'window closed :'
         self.disable_joint_override()
         self.erase_func_data()
         self.closed_flag=True
         self.remove_job()
-        self.save_window_data()
+        if self.save_flag:
+            self.save_window_data()
         self.deleteLater()
         
     def dockCloseEventTriggered(self):
+        print 'dock_close_event :'
         self.closeEvent(None)
         
     #メモリ解放しっかり
@@ -3371,4 +3410,95 @@ def get_current_data():
             UNDO_NODE_WEIGHT_DICT, REDO_NODE_WEIGHT_DICT, \
             ORG_NODE_WEIGHT_DICT
     
+#UIの再構築--------------------------------------------------------------------------------------------
+def get_ui(name, weight_type):
+    all_ui = {w.objectName(): w for w in QApplication.allWidgets()}
+    ui = []
+    #print 'name , type :', name ,weight_type
+    for k, v in all_ui.items():
+        # 2017だとインスタンスの型をチェックしないと別の物まで入ってきてしまうらしい
+        if v.__class__.__name__ == weight_type:
+            #print 'get ui :',  v.__class__.__name__ 
+            #print 'close ui :', v
+            v.close()
+            #return v
+    
+def make_ui():
+    # 同名のウインドウが存在したら削除
+    get_ui(TITLE, 'WeightEditorWindow')
+
+    app = QApplication.instance()
+    ui = WeightEditorWindow()
+    return ui
+   
+def Option(x=None, y=None):
+    print 'si weight editor : Option'
+    #Maya2016以下はいままで通りのしょり
+    if MAYA_VER <= 2016:
+        OptionWindow()
+        return
+    window = make_ui()
+    save_data = window.load_window_data(init_pos=False)
+    
+    #不要なワークスペースコントロールセットを削除
+    try:
+        cmds.deleteUI(TITLE+'WorkspaceControl')
+    except:
+        pass
         
+    if not save_data['dockable']:
+        window.save_flag=False
+        window.close()
+        OptionWindow()
+        return
+    global WINDOW
+    WINDOW = window
+    
+    #print "load window size :", save_data['sw'], save_data['sh']
+    if save_data:
+        width = save_data['sw']
+        height = save_data['sh']
+    else:
+        width = None
+        height = None
+
+    ui_script = "import siweighteditor.siweighteditor;siweighteditor.siweighteditor.restoration_workspacecontrol()"
+    
+    # 保存されたデータのウインドウ位置を使うとウインドウのバーが考慮されてないのでズレる
+    opts = {
+        "dockable":  save_data['dockable'],
+        "floating": True,
+        "area": None,
+        "allowedArea": None,
+        "x": None,
+        "y": None,
+        # below options have been introduced at 2017
+        "widthSizingProperty": width,
+        "heightSizingProperty": height,
+        "initWidthAsMinimum": None,
+        "retain": False,
+        "plugins": None,
+        "controls": None,
+        "uiScript": ui_script,
+        "closeCallback": None
+    }
+    WINDOW.setDockableParameters(**opts)
+    #print 'check unque but list :', WINDOW.but_list
+    WINDOW.init_flag = False
+    WINDOW.resizeEvent(WINDOW)
+    #WINDOW.show()
+    
+#再起動時の復元
+def restoration_workspacecontrol():
+    print 'SI Weight Editor : restoration_workspacecontrol'
+    global WINDOW
+    WINDOW = make_ui()
+    restoredControl = omui.MQtUtil.getCurrentParent()
+    mixinPtr = omui.MQtUtil.findControl(WINDOW.objectName())
+    omui.MQtUtil.addWidgetToMayaLayout(long(mixinPtr), long(restoredControl))
+    #動的配置ボタンを復旧しておく
+    WINDOW.init_flag = False
+    WINDOW.resizeEvent(WINDOW)
+        
+if __name__ == '__main__':
+    main()

@@ -57,8 +57,8 @@ def register_runtime_command(opt):
 
     exits = mel.eval('''exists "{}";'''.format(opt['cmd_name']))
     if exits:
+        #print 'custom command is already exist : *-*-*-*-*-*-*-*-*-*-*-*-*-***-**-*'
         return
-
     try:
         mel.eval(runtime_cmd.format(**opt))
         mel.eval(name_cmd.format(**opt))
@@ -69,7 +69,7 @@ def register_runtime_command(opt):
         raise e
 
 
-def register_siexplorer_runtime_command():
+def register_siwieighteditor_runtime_command():
     opts = {
         'annotation':      "Open SiWeightEditor",
         'category':        "SiWeightEditor",
@@ -95,7 +95,7 @@ def jpn(string):
 def execute():
     menu_setup()
     #今のところコマンド登録しない
-    register_siexplorer_runtime_command()
+    register_siwieighteditor_runtime_command()
     # 2017以降ではworkspaceControlがあるので記録と復元は必要ない
     #if int(cmds.about(v=True)[:4]) < 2017:
         #maya.utils.executeDeferred(sisidebar_main.load_with_start_up)

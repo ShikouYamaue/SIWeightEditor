@@ -16,6 +16,8 @@ try:
 except ImportError:
     import shiboken
 
+MAYA_VER = int(cmds.about(v=True)[:4])
+
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
     
 maya_ver = int(cmds.about(v=True)[:4])
