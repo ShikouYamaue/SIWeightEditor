@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.2'
+VERSION = 'r1.2.3'
 
 TITLE = "SIWeightEditor"
     
@@ -3439,6 +3439,11 @@ def make_ui():
    
 def Option(x=None, y=None):
     print 'si weight editor : Option'
+    global WINDOW
+    try:
+        WINDOW.close()
+    except:
+        pass
     #Maya2016以下はいままで通りのしょり
     if MAYA_VER <= 2016:
         OptionWindow()
@@ -3457,7 +3462,6 @@ def Option(x=None, y=None):
         window.close()
         OptionWindow()
         return
-    global WINDOW
     WINDOW = window
     
     #print "load window size :", save_data['sw'], save_data['sh']
