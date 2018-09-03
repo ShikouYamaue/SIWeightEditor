@@ -697,11 +697,11 @@ class WeightEditorWindow(qt.DockWindow):
                     self.area=save_data['area']
                     return save_data
             except Exception as e:
-                self.init_save_data()
-                return None
+                save_data = self.init_save_data()
+                return save_data
         else:
-            self.init_save_data()
-            return None
+            save_data = self.init_save_data()
+            return save_data
             
     def init_save_data(self):
         print 'data load error , init save data :'
@@ -732,7 +732,10 @@ class WeightEditorWindow(qt.DockWindow):
         self.dockable = False
         self.floating = True
         self.area = None
-    
+        save_data = {}
+        save_data['dockable'] = False
+        return save_data
+        
     def save_window_data(self, display=True):
         if not os.path.exists(self.dir_path):
             os.makedirs(self.dir_path)
@@ -742,7 +745,7 @@ class WeightEditorWindow(qt.DockWindow):
             pos = dock_dtrl.mapToGlobal(QPoint(0, 0))
         else:
             pos = self.pos()
-        print 'check pos :', pos
+        #print 'check pos :', pos
         size = self.size()
         save_data['pw'] = pos.x()
         save_data['ph'] = pos.y()
@@ -774,7 +777,6 @@ class WeightEditorWindow(qt.DockWindow):
             os.makedirs(self.dir_path)
         with open(self.w_file, 'w') as f:
             json.dump(save_data, f)
-        print 'save window size :',  save_data['sw'],  save_data['sh']
         
     pre_selection_node = []
     def __init__(self, parent = None, init_pos=False):
