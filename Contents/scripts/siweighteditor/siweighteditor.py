@@ -53,9 +53,9 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.1'
+VERSION = 'r1.2.2'
 
-TITLE = "SIWeightEditor_" + VERSION
+TITLE = "SIWeightEditor"
     
 #桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
 FLOAT_DECIMALS = 4
@@ -1535,6 +1535,9 @@ class WeightEditorWindow(qt.DockWindow):
         self.help_but.clicked.connect(lambda : webbrowser.open(HELP_PATH))
         msg_layout.addWidget(self.help_but)
         
+        label = QLabel(VERSION)
+        msg_layout.addWidget(label)
+        
         msg_layout.addWidget(qt.make_v_line())
         
         #実行時間のお知らせ
@@ -1551,6 +1554,7 @@ class WeightEditorWindow(qt.DockWindow):
         msg_layout.addWidget(self.msg_label)
         
         msg_layout.setSpacing(6)#ウェジェットどうしの間隔を設定する
+        msg_layout.addStretch(0)
         
         self.create_job()
         self.change_add_mode(id=self.mode)
