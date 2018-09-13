@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.3'
+VERSION = 'r1.2.4'
 
 TITLE = "SIWeightEditor"
     
@@ -89,7 +89,7 @@ def load_plugin():
             cmds.loadPlugin('bake_skin_weight.py', qt=True)
             cmds.pluginInfo('bake_skin_weight.py', e=True, autoload=True)
     except Exception as e:
-        e.message
+        'load plugin error :', e.message
     #ツールチップもついでに有効か
     cmds.help(popupMode=True)
 
@@ -2048,7 +2048,7 @@ class WeightEditorWindow(qt.DockWindow):
                         lock_data_dict[int(split_lock_data[0])] = lock_inf_str.split(',')
             return lock_data_dict
         except Exception as e:#読み込み失敗したらクリアする
-            print e.message
+            print 'decode locke data error :', e.message
             return {}
                 
     #ロック状態のクリア
@@ -2896,8 +2896,14 @@ class WeightEditorWindow(qt.DockWindow):
                 #ロックされてたらスキップ
                 if (row, column) in self.locked_cells:
                     continue
-                ##ここはsetDataしにいくより直接辞書更新した方がはやいので後ほど修正
-                self.weight_model.setData(cell_id, new_value)
+                #self.weight_model.setData(cell_id, new_value)
+                #参照リストを直接書き換える
+                weight_list = self._data[row]
+                node = self.vtx_row_dict[row][6]
+                inf_id_list = self.node_influence_id_list_dict[node]
+                local_column = inf_id_list[column]#空白セルを考慮したローカルカラム取得
+                #print 'get weight list :', weight_list
+                weight_list[local_column] = new_value
                 #焼き込みようリストを更新しておく
                 self.update_rows.add(row)
                 self.row_column_dict[row].append(column)#行に対応する選択カラムを記録する
@@ -2935,7 +2941,13 @@ class WeightEditorWindow(qt.DockWindow):
                 if added_value < 0.0:
                     added_value = 0.0
                     
-                self.weight_model.setData(cell_id, added_value)
+                #self.weight_model.setData(cell_id, added_value)
+                #参照リストを直接書き換える
+                weight_list = self._data[row]
+                node = self.vtx_row_dict[row][6]
+                inf_id_list = self.node_influence_id_list_dict[node]
+                local_column = inf_id_list[column]#空白セルを考慮したローカルカラム取得
+                weight_list[local_column] = added_value
                 #print 'calc 2 num :', org_value, new_value
                 #print 'new_add_value',added_value, 'spin :', from_spinbox, 'input :', from_input_box
                     
@@ -2954,6 +2966,10 @@ class WeightEditorWindow(qt.DockWindow):
         
         #インプットボックスの値を変更すると以前のキャッシュデータに影響があるのでベイク後に変更する
         self.weight_input.setValue(after_value*MAXIMUM_WEIGHT)#UIのスピンボックスに数値反映
+        
+        #最後に表示状態の更新
+        self.refresh_table_view()
+        self.counter.count(string='Refresh UI :')
         
         self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
         
@@ -3040,7 +3056,6 @@ class WeightEditorWindow(qt.DockWindow):
                         new_weight[i] = org_weight_list[i]
                     self.row_column_dict[row] = []
                     force_norm_flag = True
-                    
             #桁数丸めを実行
             elif round_digit is not None:
                 pre_round_sum = round(sum(new_weight), 10)
@@ -3057,7 +3072,6 @@ class WeightEditorWindow(qt.DockWindow):
                     new_weight = round_weight
                 force_norm_flag = False#丸めの時は平均化しない
                 norm_flag = False
-                
             elif enforce == 0:
                 force_norm_flag = False
             else:
@@ -3230,10 +3244,7 @@ class WeightEditorWindow(qt.DockWindow):
                 self.set_message(msg=msg, error=True)
                 
         self.counter.count(string='Bake Skin Weight :')
-        #最後に表示状態の更新
-        self.refresh_table_view()
-        self.counter.count(string='Refresh UI :')
-        self.counter.lap_print(print_flag=COUNTER_PRINT)
+        #self.counter.lap_print(print_flag=COUNTER_PRINT)
         
     def om_bake_skin_weight(self, realbake=True, ignoreundo=False):
         #焼きこみデータをグローバルに展開
