@@ -281,8 +281,4 @@ GoMayaExportで出力したオブジェクトを読み込みます。
 
 ![siweighteditor9](https://user-images.githubusercontent.com/28256498/41662504-47b089fc-74dc-11e8-9bd5-aa5294c20491.gif)
 
-## Futures
-・固定値入力ボタンつけるかも  
-・UIの色指定機能つけるかも  
-・Show Bad の挙動を少し変更するかも  
-☆他機能要望などあればお気軽にご相談ください。
+
