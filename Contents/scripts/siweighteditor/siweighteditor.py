@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.4'
+VERSION = 'r1.2.5'
 
 TITLE = "SIWeightEditor"
     
@@ -1269,7 +1269,7 @@ class WeightEditorWindow(qt.DockWindow):
         sub_tool2_layout = QHBoxLayout()
         sub_tool2_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool2_widget.setLayout(sub_tool2_layout)
-        size = 180
+        size = 230
         sub_tool2_widget.setMinimumWidth(size)
         sub_tool2_widget.setMaximumWidth(size)
         sub_tool2_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1367,6 +1367,31 @@ class WeightEditorWindow(qt.DockWindow):
         self.go_import_but.clicked.connect(go.maya_import)
         sub_tool2_layout.addWidget(self.go_import_but)
         
+        sub_tool2_layout.addWidget(QLabel('  '))
+        
+        #ウェイトのミュート
+        tip = lang.Lang(en='*Add Influence to Skin'+\
+                            'Add joints and meshes directly selected\n'+\
+                            'Add by adding influence on UI',
+                            ja=u'・スキンにインフルエンスを追加\n\n'+\
+                            u'ジョイントとメッシュを直接選択して追加\n'+\
+                            u'UI上のインフルエンスを選択して追加').output()
+        self.add_inf_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'inf_add.png', tip=tip)
+        self.add_inf_but.clicked.connect(qt.Callback(lambda : self.add_remove_influences(mode='add')))
+        sub_tool2_layout.addWidget(self.add_inf_but)
+        
+        #バインドポーズ
+        tip = lang.Lang(en='*Remove skin influence'+\
+                            'Select joint and mesh directly and remove\n'+\
+                            'Select influence on UI and remove',
+                            ja=u'・スキンのインフルエンスを削除\n\n'+\
+                            u'ジョイントとメッシュを直接選択して削除\n'+\
+                            u'UI上のインフルエンスを選択して削除').output()
+        self.rem_inf_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'inf_rem.png', tip=tip)
+        self.rem_inf_but.clicked.connect(qt.Callback(lambda : self.add_remove_influences(mode='remove')))
+        sub_tool2_layout.addWidget(self.rem_inf_but)
         #sub_tool_layout.addStretch(0)
         
         #ボタン軍の並びを一括設定
@@ -1477,13 +1502,13 @@ class WeightEditorWindow(qt.DockWindow):
         #----------------------------------------------------------------------------------------------------
         
         #HorizontalHeaderを縦書きにするカスタムクラス
-        headerView = MyHeaderView()
-        headerView.doubleClicked.connect(self.toggle_lock_weight)
-        headerView.rightClicked.connect(self.select_joint_from_header)
+        self.headerView = MyHeaderView()
+        self.headerView.doubleClicked.connect(self.toggle_lock_weight)
+        self.headerView.rightClicked.connect(self.select_joint_from_header)
         
         #テーブル作成
         self.view_widget = RightClickTableView(self)
-        self.view_widget.setHorizontalHeader(headerView)
+        self.view_widget.setHorizontalHeader(self.headerView)
         self.view_widget.verticalHeader().setDefaultSectionSize(20)
         self.view_widget.rightClicked.connect(self.get_clicke_item_value)
         self.view_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)#編集スタート不可能にする
@@ -1595,6 +1620,43 @@ class WeightEditorWindow(qt.DockWindow):
         joint_rule_editor.Option()
         
     #サブツールコマンド群-----------------------------------------------------------
+    def add_remove_influences(self, mode=''):
+        add_remove_inf_list = []
+        for id, inf in enumerate(self.all_influences):
+            is_active = self.headerView.check_section_is_active(id)
+            #print 'is active :', id, inf, is_active
+            if is_active:
+                add_remove_inf_list.append(inf)
+                
+        sel_joints = cmds.ls(sl=True, type='joint', l=True)
+        add_remove_inf_list = list(set(add_remove_inf_list + sel_joints))
+        
+        for node in self.hl_nodes:
+            srcSkinCluster = cmds.ls(cmds.listHistory(node), type='skinCluster')
+            srcSkinCluster = srcSkinCluster[0]
+            influences = cmds.skinCluster(srcSkinCluster, q=True, inf=True)
+            influences = cmds.ls(influences, l=True)
+            #print 'current influences :', influences
+            if mode == 'add':
+                sub_influences = list(set(add_remove_inf_list) - set(influences))
+                #print 'add inf :', node, sub_influences
+                if sub_influences:
+                    cmds.skinCluster(node, e=True, ai=sub_influences, lw=True, ug=False, wt=0, ps=0)
+            elif mode == 'remove':
+                if len(influences) <= 1:
+                    continue
+                sub_influences = list(set(add_remove_inf_list) & set(influences))
+                #print 'add inf :', node, sub_influences
+                if sub_influences:
+                    cmds.skinCluster(node, e=True, ri=sub_influences)
+                
+        
+        cmds.select(self.original_selection, r=True)
+        self.get_set_skin_weight()
+        
+    def remove_influences(self):
+        pass
+    
     def freeze(self):
         freeze.freeze()
     
@@ -2967,8 +3029,7 @@ class WeightEditorWindow(qt.DockWindow):
         #インプットボックスの値を変更すると以前のキャッシュデータに影響があるのでベイク後に変更する
         self.weight_input.setValue(after_value*MAXIMUM_WEIGHT)#UIのスピンボックスに数値反映
         
-        #最後に表示状態の更新
-        self.refresh_table_view()
+        
         self.counter.count(string='Refresh UI :')
         
         self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
@@ -3246,6 +3307,10 @@ class WeightEditorWindow(qt.DockWindow):
         self.counter.count(string='Bake Skin Weight :')
         #self.counter.lap_print(print_flag=COUNTER_PRINT)
         
+        #最後に表示状態の更新
+        self.refresh_table_view()
+        #cmds.scriptJob(ro=True, e=("idle", self.refresh_table_view), protected=True)
+        
     def om_bake_skin_weight(self, realbake=True, ignoreundo=False):
         #焼きこみデータをグローバルに展開
         set_current_data(self.bake_node_id_dict, self.bake_node_weight_dict, 
@@ -3260,17 +3325,17 @@ class WeightEditorWindow(qt.DockWindow):
         #フォーカス移してテーブルの状態を更新する
         self.view_widget.setFocus()
         self.view_widget.clearFocus()
+        self.setFocus()
+        self.clearFocus()
         #縦ヘッダーを取得
         header = self.view_widget.verticalHeader()
         #ヘッダーの数だけセクション（行の頭）の状態をアップデートする
         for i in range(header.count()):
             header.updateSection(i)
-        '''
         try:
             self.weight_model.reset()
         except:
             pass
-        '''
                 
     change_flag = False
     def sld_pressed(self):
