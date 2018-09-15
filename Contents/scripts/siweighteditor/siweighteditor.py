@@ -3325,18 +3325,19 @@ class WeightEditorWindow(qt.DockWindow):
         #フォーカス移してテーブルの状態を更新する
         self.view_widget.setFocus()
         self.view_widget.clearFocus()
-        self.setFocus()
-        self.clearFocus()
+        #self.setFocus()
+        #self.clearFocus()
         #縦ヘッダーを取得
         header = self.view_widget.verticalHeader()
         #ヘッダーの数だけセクション（行の頭）の状態をアップデートする
         for i in range(header.count()):
             header.updateSection(i)
+        '''
         try:
             self.weight_model.reset()
         except:
             pass
-                
+        '''
     change_flag = False
     def sld_pressed(self):
         cmds.undoInfo(openChunk=True)
