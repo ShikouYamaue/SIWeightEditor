@@ -267,6 +267,14 @@ GoMayaExportで出力したオブジェクトを読み込みます。
 
 ![siweighteditor19](https://user-images.githubusercontent.com/28256498/42170922-d80072fe-7e52-11e8-965d-80fc76fcb114.gif)
 
+### Add Influence / Remove Influence
+
+UI上の選択からスキンに対してインフルエンスの追加削除ができます。  
+ジョイントとメッシュを直接選択した状態でも実行可能です。  
+
+![weight1](https://user-images.githubusercontent.com/28256498/45583890-04204980-b905-11e8-8719-2dda7bbcafc4.png)
+
+
 ## オプション機能
 
 ### 0セルの明るさ指定、インフルエンスサーチ
