@@ -181,6 +181,8 @@ Maya標準機能のウェイトハンマーを選択したセル頂点に対し�
 
 ### Transfer Weight Multiple
 
+![image](https://user-images.githubusercontent.com/28256498/45917719-c39d6e80-beb6-11e8-979d-2b99b94d502c.png)
+
 SIのGatorライクなウェイト転写機能です。  
 
 ![image](https://user-images.githubusercontent.com/28256498/42168742-d151a078-7e4c-11e8-87ec-103cfbd36e42.png)
