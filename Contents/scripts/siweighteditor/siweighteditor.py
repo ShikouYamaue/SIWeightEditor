@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.5'
+VERSION = 'r1.2.6'
 
 TITLE = "SIWeightEditor"
     
@@ -1176,9 +1176,9 @@ class WeightEditorWindow(qt.DockWindow):
         sub_tool_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool_widget.setLayout(sub_tool_layout)
         if MAYA_VER >= 2016:
-            size = 212
+            size = 212 + 50
         else:
-            size = 190
+            size = 190 + 50
         sub_tool_widget.setMinimumWidth(size)
         sub_tool_widget.setMaximumWidth(size)
         sub_tool_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1261,6 +1261,23 @@ class WeightEditorWindow(qt.DockWindow):
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'transfer_paste.png', tip=tip)
         self.transfer_paste_but.clicked.connect(qt.Callback(self.weight_transfer_paste))
         sub_tool_layout.addWidget(self.transfer_paste_but)
+        
+        sub_tool_layout.addWidget(QLabel('  '))
+        #ウェイトムーブコピー
+        tip = lang.Lang(en='*Move Inflence Weight / Copy\n\nSet the influence of the weight transfer source from the selected cell \nMultiple designation possible', 
+                            ja=u'・Move Inflence Weight / Copy\n\n選択セルからウェイト移動元のインフルエンスを設定\n複数指定可能').output()
+        self.move_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'move_copy.png', tip=tip)
+        self.move_copy_but.clicked.connect(qt.Callback(self.copy_move_influences))
+        sub_tool_layout.addWidget(self.move_copy_but)
+        
+        #ウェイトムーブペースト
+        tip = lang.Lang(en='*Move Inflence Weight / Paste\n\nWeight Distribute the influence weight specified as the source of movement evenly over the influence of the selected cell \nMultiple cells can be specified', 
+                            ja=u'・Move Inflence Weight / Paste\n\nウェイト移動元に指定したインフルエンスのウェイトを選択セルのインフルエンスに均等分配します\n複数セル指定可能').output()
+        self.move_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'move_paste.png', tip=tip)
+        self.move_paste_but.clicked.connect(qt.Callback(self.paste_move_influences))
+        sub_tool_layout.addWidget(self.move_paste_but)
         
         #-----------------------------------------------------------------------------------------------------
         #サブツール群を配置
@@ -1620,6 +1637,36 @@ class WeightEditorWindow(qt.DockWindow):
         joint_rule_editor.Option()
         
     #サブツールコマンド群-----------------------------------------------------------
+    move_inf_list = []
+    def copy_move_influences(self):
+        self.move_inf_list = []
+        for id, inf in enumerate(self.all_influences):
+            is_active = self.headerView.check_section_is_active(id)
+            if is_active:
+                self.move_inf_list.append(inf)
+        #print 'get move inf :', self.move_inf_list
+        
+    def paste_move_influences(self):
+        if not self.move_inf_list:
+            return
+        self.counter.reset()
+        self.update_rows = set()
+        self.row_column_dict = defaultdict(lambda : [])
+        for cell_id in self.selected_items:
+            row = cell_id.row()
+            column = cell_id.column() 
+            self.update_rows.add(row)
+            self.row_column_dict[row].append(column)#行に対応する選択カラムを記録する
+        #コピー元インフルエンスのノード毎IDを事前に辞書化する
+        self.node_copy_id_dict = {}
+        for node in self.hl_nodes:
+            influences = self.influences_dict[node]
+            copy_id_set = {influences.index(inf) for inf in self.move_inf_list if inf in influences}
+            self.node_copy_id_dict[node] = copy_id_set
+        
+        self.precalculate_bake_weights(move_weight=True)
+        self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
+        
     def add_remove_influences(self, mode=''):
         add_remove_inf_list = []
         for id, inf in enumerate(self.all_influences):
@@ -2339,6 +2386,7 @@ class WeightEditorWindow(qt.DockWindow):
             self.node_vtx_dict = {}
             self.show_dict = defaultdict(lambda : [])
             self.show_dict['clear'] = []#クリア用に初期値を与えたデフォルトディクトを作る
+            
         #インフルエンスフィルター更新の時は頂点変更しない
         elif filter:
             self.node_vtx_dict = {}
@@ -2347,6 +2395,7 @@ class WeightEditorWindow(qt.DockWindow):
             #フィルター解除されたら全インフルエンス情報をもとに戻す
             if not self.filter_but.isChecked():
                 self.all_influences = copy.copy(self.store_skin_weight.all_influences)
+                
         #ロックボタンが押されているときの挙動
         elif self.lock_but.isChecked()  and self.pre_hl_nodes and not cycle and not show_bad:
             self.hl_nodes = self.pre_hl_nodes
@@ -2362,7 +2411,6 @@ class WeightEditorWindow(qt.DockWindow):
         self.counter.count(string='get mesh vtx :')
         
         #頂点ID、ウェイト、インフルエンスを格納したインスタンスから各種データをとりだしておく
-        
         if not self.node_vtx_dict:
             self.store_skin_weight.run_store()
             self.hl_nodes = list(set(self.store_skin_weight.mesh_node_list))
@@ -2405,12 +2453,15 @@ class WeightEditorWindow(qt.DockWindow):
         self.filter_weight_dict = defaultdict(lambda : 0.0)#ウェイト0のインフルエンスの表示、非表示切り替えのためのすべての合計値辞書
         self.vtx_weight_dict = {}#焼きこみ時、正規化ウェイトをUIに反映するための辞書
         self.lock_data_dict = {}#ロック情報を格納する。全頂点捜査後、インフルエンスとセルのロック情報対応を作るための事前データ。
+        self.node_influence_id_dict_dict = {}
         for node_id, node in enumerate(self.hl_nodes):
             self.node_id_dict[node] = node_id
             skin_cluster = self.all_skin_clusters[node]
             influences = self.influences_dict[node]
             
             node_influence_id_dict =  {inf:influences.index(inf)  for inf in influences}#インフルエンスとウェイトIDの対応辞書
+            self.node_influence_id_dict_dict[node] = node_influence_id_dict
+            
             all_influences_count = len(influences)#インフルエンスの総数
             inf_id_list = range(len( influences))#インフルエンスの連番IDリスト
             
@@ -2590,10 +2641,6 @@ class WeightEditorWindow(qt.DockWindow):
         
         self.counter.count('ui data finalaize :')
         
-        #↓もういらない？
-        #self.model_index = self.weight_model.indexes#モデルのインデックス番号をあらかじめ取得
-        #self.model_id_dict = {cell_id:i for i, cell_id in enumerate(self.model_index)}
-        
         #前回の選択を格納
         self.pre_hl_nodes = self.hl_nodes
         
@@ -2641,7 +2688,6 @@ class WeightEditorWindow(qt.DockWindow):
             self.change_add_mode(self.add_mode, change_only=True)#スピンボックスの値を更新するためにAddMode関数にいく
         self.pre_add_value = 0.0#加算量を初期化
         self.sel_rows = list(set([item.row() for item in self.selected_items]))
-        
         
         if self.highlite_but.isChecked():
             self.hilite_vertices()
@@ -3037,7 +3083,7 @@ class WeightEditorWindow(qt.DockWindow):
     #変更されたウェイト事前計算する
     #@prof.profileFunction()
     @timer
-    def precalculate_bake_weights(self, realbake=True, ignoreundo=False, enforce=0, round_digit=None):
+    def precalculate_bake_weights(self, realbake=True, ignoreundo=False, enforce=0, round_digit=None, move_weight=False):
         #print 'precalculate_bake_weights : '
         #self.counter.reset()
         #enforce-1は強制正規化フラッグ扱い
@@ -3091,6 +3137,30 @@ class WeightEditorWindow(qt.DockWindow):
             #ロックされたセル情報からロックインフルエンスのIDリストを作る
             locked_inf_id_list = self.vtx_lock_data_dict[vtx_name]
             
+            #ウェイト移動を実行
+            if move_weight:
+                copy_id_set = self.node_copy_id_dict[node]
+                locked_inf_id_set = set(locked_inf_id_list)
+                #print 'copy inf id :', copy_id_list
+                move_sum = 0.0
+                #ウェイトコピー元を0.0にして値を積算する
+                copy_column_id_set = copy_id_set - locked_inf_id_set
+                for id in copy_column_id_set :
+                    move_sum += new_weight[id] 
+                    new_weight[id] = 0.0
+                #print 'movesum weight :', move_sum
+                #ペースト先に均等に分配
+                node_influence_id_dict = self.node_influence_id_dict_dict[node]
+                selected_inf_ids = [node_influence_id_dict[self.all_influences[column]] for column in self.row_column_dict[row]]
+                paste_column_id_set = set(selected_inf_ids) - locked_inf_id_set
+                #print 'paste id :', paste_column_id_set
+                paste_count = len(paste_column_id_set)
+                if paste_count :
+                    paste_value = move_sum / paste_count 
+                    #print "value :", paste_value
+                    for id in paste_column_id_set:
+                        new_weight[id] += paste_value
+                    
             #エンフォースリミットを実行
             if enforce >= 1:
                 #ロックされてるものは無限大にしておいてあとで数値戻す
@@ -3153,7 +3223,7 @@ class WeightEditorWindow(qt.DockWindow):
                 force_norm_flag = False
             
             #ウェイト正規化処理0.2sec
-            if norm_flag or force_norm_flag:
+            if (norm_flag or force_norm_flag) and not move_weight:
                 norm_weight = []#正規化格納用
                 #ロックされているウェイトの合計を出しておく
                 locked_sum = sum([new_weight[i] for i in locked_inf_id_list])
