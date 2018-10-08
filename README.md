@@ -195,6 +195,18 @@ SIのGatorライクなウェイト転写機能です。
 
 ![siweighteditor13](https://user-images.githubusercontent.com/28256498/42169047-a406172e-7e4d-11e8-8f0f-9cfeb50493d2.gif)
 
+### Move Influence Weight
+
+インフルエンスに割り振られているウェイトを他のインフルエンスに分配する機能です。  
+
+![image](https://user-images.githubusercontent.com/28256498/45917719-c39d6e80-beb6-11e8-979d-2b99b94d502c.png)
+
+使わなくなったジョイントのウェイトを他のジョイントに分配したり、追加したジョイントに振り分けたりなど。  
+
+複数インフルエンスから複数インフルエンスの移動にも対応しています。  
+
+![weight3](https://user-images.githubusercontent.com/28256498/45917665-014dc780-beb6-11e8-8b7c-f1342be82107.gif)
+
 ###  Symmetry機能
 
 よく使うミラーリング系ツール
