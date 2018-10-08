@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.6'
+VERSION = 'r1.2.7'
 
 TITLE = "SIWeightEditor"
     
@@ -139,7 +139,7 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
                 self.setValue(self.value()+delta*0.1*MAXIMUM_WEIGHT)
             else:
                 self.setValue(self.value()+delta*0.01*MAXIMUM_WEIGHT)
-            cmds.scriptJob(ro=True, e=("idle", self.emit_wheel_event), protected=True)
+            cmds.evalDeferred(self.emit_wheel_event)
         if event.type() == QEvent.KeyPress:
             self.keypressed.emit()
         if event.type() == QEvent.MouseButtonPress:
@@ -151,7 +151,7 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
         
     #入力窓を選択するジョブ
     def sel_all_input(self):
-        cmds.scriptJob(ro=True, e=("idle", self.select_box_all), protected=True)
+        cmds.evalDeferred(self.select_box_all)
         
     #スピンボックスの数値を全選択する
     def select_box_all(self):
@@ -183,7 +183,7 @@ class EditorSpinbox(QSpinBox):
         return False
     #ウェイト入力窓を選択するジョブ
     def sel_all_input(self):
-        cmds.scriptJob(ro=True, e=("idle", self.select_box_all), protected=True)
+        cmds.evalDeferred(self.select_box_all)
     #スピンボックスの数値を全選択する
     def select_box_all(self):
         try:
@@ -640,9 +640,6 @@ class OptionWindow():
                             floating=WINDOW.floating ,
                             width=WINDOW.sw,
                             height=WINDOW.sh)
-        #WINDOW.get_set_skin_weight()
-        #起動時に取得実行
-        #cmds.scriptJob(ro=True, e=("idle", lambda : WINDOW.get_set_skin_weight()), protected=True)
         
 class WeightEditorWindow(qt.DockWindow):
     selection_mode = 'tree'
@@ -1740,7 +1737,7 @@ class WeightEditorWindow(qt.DockWindow):
     def weight_transfer_paste(self):
         msg = WEIGHT_TRANSFER_MULTIPLE.transfer_weight_multiple()
         
-        cmds.scriptJob(ro=True, e=("idle", lambda : self.set_message(msg=msg, error=False)), protected=True)
+        cmds.evalDeferred(lambda : self.set_message(msg=msg, error=False))
         
     #ウェイトハンマーの実行、後でちゃんとする
     def hummer_weight(self):
@@ -3379,7 +3376,6 @@ class WeightEditorWindow(qt.DockWindow):
         
         #最後に表示状態の更新
         self.refresh_table_view()
-        #cmds.scriptJob(ro=True, e=("idle", self.refresh_table_view), protected=True)
         
     def om_bake_skin_weight(self, realbake=True, ignoreundo=False):
         #焼きこみデータをグローバルに展開

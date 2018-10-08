@@ -108,7 +108,7 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
                 self.setValue(self.value()+delta*10.0)
             else:
                 self.setValue(self.value()+delta)
-            cmds.scriptJob(ro=True, e=("idle", self.emit_wheel_event), protected=True)
+            cmds.evalDeferred(self.emit_wheel_event)
         if event.type() == QEvent.KeyPress:
             self.keypressed.emit()
         if event.type() == QEvent.MouseButtonPress:
@@ -119,7 +119,7 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
         self.wheeled.emit()
     #ウェイト入力窓を選択するジョブ
     def sel_all_input(self):
-        cmds.scriptJob(ro=True, e=("idle", self.select_box_all), protected=True)
+        cmds.evalDeferred(self.select_box_all)
     #スピンボックスの数値を全選択する
     def select_box_all(self):
         try:
