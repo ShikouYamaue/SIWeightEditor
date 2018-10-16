@@ -149,15 +149,16 @@ class TemporaryReparent():
 
     def cutChildNode(self):
         # 処理ノードの親子を取得しておく
-        nodeChildren = cmds.listRelatives(self.node, children=True, fullPath=True)
+        nodeChildren = cmds.listRelatives(self.node, children=True, fullPath=True) or []
         for child in nodeChildren:
             # 子のノードがトランスフォームならダミーに親子付けして退避
             if cmds.nodeType(child) in self.node_list:
                 cmds.parent(child, self.dummyParent)
+                
     #フリーズトランスフォーム用に場合分け親子付け関数を用意
     #子を含むマルチ選択状態の場合は別のダミー親につけてフリーズ後のSRT状態を調整する
     def customCutChildNode(self):
-        nodeChildren = cmds.listRelatives(self.node, children=True, fullPath=True)
+        nodeChildren = cmds.listRelatives(self.node, children=True, fullPath=True) or []
         for child in nodeChildren:
             if cmds.nodeType(child) in self.node_list:
                 if child in self.preSelection:
@@ -168,7 +169,7 @@ class TemporaryReparent():
                     cmds.parent(child, self.srtDummyParent)
 
     def reparentNode(self):
-        dummyChildren = cmds.listRelatives(self.dummyParent, children=True, fullPath=True)
+        dummyChildren = cmds.listRelatives(self.dummyParent, children=True, fullPath=True) or []
         for child in dummyChildren:
             if cmds.nodeType(child) in self.node_list:
                 cmds.parent(child, self.node)
