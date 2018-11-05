@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.8'
+VERSION = 'r1.2.9'
 
 TITLE = "SIWeightEditor"
     
@@ -355,7 +355,7 @@ class MyHeaderView(QHeaderView):
         else:
             offset = 0
         rect = rect.getRect()
-        rect = [rect[1]-rect[3]+1, rect[0]-1+offset, rect[3]-1, rect[2]-offset]
+        rect = [rect[1] - rect[3] + 1, rect[0] - 1 + offset, rect[3] - 1, rect[2] - offset]
         rect = QRect(*rect)
         return rect
         
@@ -2094,6 +2094,8 @@ class WeightEditorWindow(qt.DockWindow):
             influences =  row_data[2]
             vtx_name = row_data[5]
             node = row_data[6]
+            node_influence_id_list = self.node_influence_id_list_dict[node]
+            rock_id = node_influence_id_list[column]#ロックするインフルエンスのID
             try:
                 rock_influence = influences[rock_id]#ロックするインフルエンス
             except:
