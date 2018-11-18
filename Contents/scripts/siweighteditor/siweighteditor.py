@@ -53,11 +53,11 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.2.9'
+VERSION = 'r1.3.0'
 
 TITLE = "SIWeightEditor"
     
-#桁数をとりあえずグローバルで指定しておく、後で設定可変にするつもり
+#桁数をとりあえずグローバルで指定しておく
 FLOAT_DECIMALS = 4
 #0-1か0-100かを切り替えられるように変数指定
 MAXIMUM_WEIGHT = 100
@@ -70,7 +70,7 @@ WIDGET_HEIGHT = 32
 BUTTON_HEIGHT = 22
 
 #トランスファークラスをインスタンス化しておく
-WEIGHT_TRANSFER_MULTIPLE = weight_transfer_multiple.WeightTransferMultiple()
+WEIGHT_TRANSFER_MULTIPLE = None
 
 #速度計測結果を表示するかどうか
 COUNTER_PRINT = True
@@ -791,6 +791,10 @@ class WeightEditorWindow(qt.DockWindow):
     
     show_flag = False    
     def _init_ui(self, job_create=True):
+        global WEIGHT_TRANSFER_MULTIPLE
+        if WEIGHT_TRANSFER_MULTIPLE is None:
+            WEIGHT_TRANSFER_MULTIPLE = weight_transfer_multiple.WeightTransferMultiple()
+        
         self.counter = prof.LapCounter()#ラップタイム計測クラス
         self.init_flag=True
         sq_widget = QScrollArea(self)

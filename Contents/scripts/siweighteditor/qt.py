@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from maya import OpenMayaUI, cmds
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 #PySide2、PySide両対応
 import imp
 try:
@@ -15,23 +16,36 @@ try:
     import shiboken2 as shiboken
 except ImportError:
     import shiboken
-
-MAYA_VER = int(cmds.about(v=True)[:4])
-
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
     
-maya_ver = int(cmds.about(v=True)[:4])
-maya_api_ver = int(cmds.about(api=True))
+MAYA_VER = int(cmds.about(v=True)[:4])
+MAYA_API_VER = int(cmds.about(api=True))
 
-maya_window = shiboken.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
+try:
+    MAYA_WIDNOW = shiboken.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
+except:
+    MAYA_WIDNOW = None
+    
+#MayaWindow単独取得関数
+def get_maya_window():
+    try:
+        imp.find_module("shiboken2")
+        import shiboken2
+        return shiboken2.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
 
+    except ImportError:
+        try:
+            import shiboken
+            return shiboken.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
+        except:
+            return None
+            
 class MainWindow(QMainWindow):
-    def __init__(self, parent = maya_window):
-        super(MainWindow, self).__init__(maya_window)
+    def __init__(self, parent = MAYA_WIDNOW):
+        super(MainWindow, self).__init__(MAYA_WIDNOW)
        
 class SubWindow(QMainWindow):
-    def __init__(self, parent = maya_window):
-        super(SubWindow, self).__init__(maya_window)
+    def __init__(self, parent = MAYA_WIDNOW):
+        super(SubWindow, self).__init__(MAYA_WIDNOW)
         
 class DockWindow(MayaQWidgetDockableMixin, QMainWindow):
     def __init__(self, *args, **kwargs):
