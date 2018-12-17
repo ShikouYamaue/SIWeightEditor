@@ -47,9 +47,9 @@ class WeightCopyPaste():
             self.skinMeshes.append(temp)
         # ファイルパスを生成しておく
         if path == 'default':
-            self.filePath = os.getenv('MAYA_APP_DIR') + '\\Scripting_Files\\weight\\' + self.saveName
+            self.filePath = os.getenv('MAYA_APP_DIR') + os.sep +'Scripting_Files'+ os.sep + 'weight' + os.sep + self.saveName
         elif path == 'project':
-            self.scene_path = '/'.join(cmds.file(q=True, sceneName=True).split('/')[:-1])
+            self.scene_path = os.sep.join(cmds.file(q=True, sceneName=True).split(os.sep)[:-1])
             self.protect_path = os.path.join(self.scene_path, 'weight_protector')
             try:
                 if not os.path.exists(self.protect_path):
@@ -57,7 +57,7 @@ class WeightCopyPaste():
             except Exception as e:
                 print e.message
                 return
-            self.filePath = self.protect_pat+'\\' + self.saveName
+            self.filePath = self.protect_pat+os.sep + self.saveName
         self.fileName = os.path.join(self.filePath, self.saveName + '.json')
         self.apiName = os.path.join(self.filePath, self.saveName + '.skn')
         # コピーかペーストをそれぞれ呼び出し
@@ -132,13 +132,13 @@ class WeightCopyPaste():
                     xml_name = meshName + '.xml'
                     
                 
-                if os.path.isfile(self.filePath + '\\' + xml_name):
+                if os.path.isfile(self.filePath + os.sep + xml_name):
                     if self.method == 'index' or self.method == 'over':
                         cmds.deformerWeights(xml_name,
                                              im=True,
                                              method=self.method,
                                              deformer=dstSkinCluster,
-                                             path=self.filePath + '\\')
+                                             path=self.filePath + os.sep)
                     else:
                         cmds.deformerWeights(xml_name,
                                              im=True,
@@ -146,7 +146,7 @@ class WeightCopyPaste():
                                              method=self.method,
                                              worldSpace=True,
                                              positionTolerance=self.threshold,
-                                             path=self.filePath + '\\')
+                                             path=self.filePath + os.sep)
                     cmds.skinCluster(dstSkinCluster, e=True, forceNormalizeWeights=True)
                     print 'Weight paste to : ' + str(skinMesh)
                 else:
@@ -160,12 +160,12 @@ class WeightCopyPaste():
         saveData = {}
         # 保存ディレクトリが無かったら作成
         if not os.path.exists(self.filePath):
-            os.makedirs(os.path.dirname(self.filePath + '\\'))  # 末尾\\が必要なので注意
+            os.makedirs(os.path.dirname(self.filePath + os.sep))  # 末尾\\が必要なので注意
         else:  # ある場合は中身を削除
             files = os.listdir(self.filePath)
             if files is not None:
                 for file in files:
-                    os.remove(self.filePath + '\\' + file)
+                    os.remove(self.filePath + os.sep + file)
         skinFlag = False
         all_influences = []
         for skinMesh in self.skinMeshes:
@@ -218,7 +218,7 @@ class WeightCopyPaste():
                 meshName = str(weightFile).replace('|', '__pipe__')
                 # コロンはファイル名に出来ないので変換しておく
                 meshName = str(meshName).replace(':', '__colon__')
-                cmds.deformerWeights(meshName + '.xml', export=True, deformer=srcSkinCluster, path=self.filePath + '\\')
+                cmds.deformerWeights(meshName + '.xml', export=True, deformer=srcSkinCluster, path=self.filePath + os.sep)
         with open(self.fileName, 'w') as f:  # ファイル開く'r'読み込みモード'w'書き込みモード
             json.dump(saveData, f)
 
@@ -363,9 +363,9 @@ def load_joint_label_rules():
     dir_path = os.path.join(
                     os.getenv('MAYA_APP_DIR'),
                     'Scripting_Files')
-    start_file = dir_path+'/joint_rule_start.json'
-    middle_file = dir_path+'/joint_rule_middle.json'
-    end_file = dir_path+'/joint_rule_end.json'
+    start_file = dir_path+os.sep+'joint_rule_start.json'
+    middle_file = dir_path+os.sep+'joint_rule_middle.json'
+    end_file = dir_path+os.sep+'joint_rule_end.json'
     save_files = [start_file, middle_file, end_file]
     
     left_list_list = []
