@@ -39,7 +39,7 @@ class SubWindow(qt.SubWindow):
     
     def init_save(self):
         self.dir_path = os.path.join(
-            os.getenv('MAYA_APP_dir'),
+            os.getenv('MAYA_APP_DIR'),
             'Scripting_Files')
         self.start_file = self.dir_path+'/joint_rule_start.json'
         self.middle_file = self.dir_path+'/joint_rule_middle.json'

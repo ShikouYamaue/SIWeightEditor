@@ -361,7 +361,7 @@ def load_joint_label_rules():
     def_right_list_list = [start_r_list, mid_r_list, end_r_list]
     #左右対称設定ファイルからルールをロードする
     dir_path = os.path.join(
-                    os.getenv('MAYA_APP_dir'),
+                    os.getenv('MAYA_APP_DIR'),
                     'Scripting_Files')
     start_file = dir_path+'/joint_rule_start.json'
     middle_file = dir_path+'/joint_rule_middle.json'
