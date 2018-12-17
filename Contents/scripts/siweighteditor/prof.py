@@ -78,3 +78,5 @@ class IntegrationCounter():
         self.all_start = time.time()
         self.start = time.time()
         self.lap_list = []
+        self.integration_dict = {}
+        self.integration_dict = defaultdict(lambda : 0)

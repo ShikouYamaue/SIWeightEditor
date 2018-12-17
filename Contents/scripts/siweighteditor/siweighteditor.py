@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.3.0'
+VERSION = 'r1.3.1'
 
 TITLE = "SIWeightEditor"
     
@@ -649,7 +649,7 @@ class WeightEditorWindow(qt.DockWindow):
     def init_save(self):
         temp = __name__.split('.')
         self.dir_path = os.path.join(
-            os.getenv('MAYA_APP_dir'),
+            os.getenv('MAYA_APP_DIR'),
             'Scripting_Files')
         self.w_file = self.dir_path+'/'+temp[-1]+'_window.json'
     
