@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.3.2'
+VERSION = 'r1.3.3'
 
 TITLE = "SIWeightEditor"
     
@@ -80,7 +80,6 @@ COUNTER_PRINT = False
 HELP_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/blob/master/README.md'
 #リリースページ
 REREASE_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/releases'
-
 
 #焼きこみプラグインをロードしておく
 def load_plugin():
@@ -797,6 +796,7 @@ class WeightEditorWindow(qt.DockWindow):
             WEIGHT_TRANSFER_MULTIPLE = weight_transfer_multiple.WeightTransferMultiple()
         
         self.counter = prof.LapCounter()#ラップタイム計測クラス
+        self.it_counter = prof.IntegrationCounter()#積算カウンタークラス
         self.init_flag=True
         sq_widget = QScrollArea(self)
         sq_widget.setWidgetResizable(True)#リサイズに中身が追従するかどうか
@@ -2380,6 +2380,7 @@ class WeightEditorWindow(qt.DockWindow):
             self.disable_joint_override()
         
         self.counter.reset()
+        self.it_counter.reset()
         
         self.original_selection = cmds.ls(sl=True, l=True)#ハイライトの時にまとめて選択する元の選択
         self.show_dict = show_dict
@@ -2458,6 +2459,8 @@ class WeightEditorWindow(qt.DockWindow):
         self.vtx_weight_dict = {}#焼きこみ時、正規化ウェイトをUIに反映するための辞書
         self.lock_data_dict = {}#ロック情報を格納する。全頂点捜査後、インフルエンスとセルのロック情報対応を作るための事前データ。
         self.node_influence_id_dict_dict = {}
+        
+        #self.it_counter.count(string='initalize :')
         for node_id, node in enumerate(self.hl_nodes):
             self.node_id_dict[node] = node_id
             skin_cluster = self.all_skin_clusters[node]
@@ -2476,6 +2479,8 @@ class WeightEditorWindow(qt.DockWindow):
             self.mesh_rows.append(self.all_rows)
             self.all_rows += 1
             
+            #self.it_counter.count(string='000 :')
+            
             #メッシュ行にアイテムを設定、とりあえずメッシュ名だけ入れる
             #他の空セルは後ほどゼロカラム計算後に入れる
             items = defaultdict(lambda: None)
@@ -2483,17 +2488,26 @@ class WeightEditorWindow(qt.DockWindow):
             items[0] = node.split('|')[-1]
             self._data.append(items)
             
+            #self.it_counter.count(string='005 :')
+            
             if show_all:#全照会するときはノード全体のIDリストを取りに行く
                 current_vtx = self.node_vtx_dict[node]
             elif undo:
                 current_vtx = self.pre_current_vtx_dict[node]
             else:#通常取得
+                #選択ノード数が多いとここがめっちゃ重い
                 current_vtx = self.store_skin_weight.om_selected_mesh_vertex(node, show_bad=show_bad)#表示用頂点
             self.pre_current_vtx_dict[node] = current_vtx
             if not current_vtx:#現在の頂点がなければ次へ
                 continue
+            
+            #self.it_counter.count(string='008 :')
+                
             filter_vtx = self.show_dict[node]
             target_vertices = sorted(list(set(current_vtx) & set(filter_vtx)))
+            
+            #self.it_counter.count(string='010 :')
+            
             if target_vertices:
                 vertex_dict = self.node_vtx_dict[node]
                 node_weight_list = self.node_weight_dict[node]
@@ -2547,6 +2561,8 @@ class WeightEditorWindow(qt.DockWindow):
                     for j, inf_weight in enumerate(rot_weight_list):
                         inf_weight_sum = sum(inf_weight)
                         self.filter_weight_dict[influences[j]] += inf_weight_sum
+                        
+            #self.it_counter.count(string='020 :')
     
         self.mesh_rows.append(self.all_rows)#最後のメッシュの末尾探索のためにもう一個分メッシュ行を追加しておく
         
@@ -2654,6 +2670,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.counter.count('ui create model list dict :')
         
         self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
+        #self.it_counter.integration_print(print_flag=COUNTER_PRINT, window=self)
         
         
     #セルの選択変更があった場合に現在の選択セルを格納する

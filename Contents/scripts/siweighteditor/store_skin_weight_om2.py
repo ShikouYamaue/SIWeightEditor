@@ -5,6 +5,7 @@ import maya.api.OpenMaya as om2
 import maya.api.OpenMayaAnim as oma2
 from maya import cmds
 from . import common
+from . import prof
 
 class StoreSkinWeight():
     def run_store(self):
@@ -14,7 +15,12 @@ class StoreSkinWeight():
         #self.om_selected_mesh_vertex()
         
     #指定ノード中の選択バーテックスを返す
+    #@prof.profileFunction()
+    #ノード名、ノードタイプキャッシュ
+    node_type_dict = {}
+    shape_transform_dict = {}
     def om_selected_mesh_vertex(self, node, show_bad=False):
+        
         sList = om2.MGlobal.getActiveSelectionList()
                 
         iter = om2.MItSelectionList(sList)
@@ -28,22 +34,34 @@ class StoreSkinWeight():
                 return []
                 
             try:
-                meshDag, component = iter.getComponent () 
+                meshDag, component = iter.getComponent() 
                 #print 'get dag node :', meshDag.fullPathName(), component
             except Exception as e:#2016ではノード出したばかりの状態でシェイプがなぜか帰ってくるのでエラー回避
                 print 'get current vtx error :', e.message
                 iter.next()
                 continue
-            
+                
             mesh_path_name = meshDag.fullPathName()
-            if cmds.nodeType(mesh_path_name) == 'mesh':
-                mesh_path_name = cmds.listRelatives(mesh_path_name, p=True, f=True)[0]
+            try:
+                node_type = self.node_type_dict[mesh_path_name]
+            except:
+                node_type = cmds.nodeType(mesh_path_name)
+                self.node_type_dict[mesh_path_name] = node_type
+                
+            if node_type == 'mesh':
+                try:
+                    mesh_path_name = self.shape_transform_dict[mesh_path_name]
+                except:
+                    transform_name = cmds.listRelatives(mesh_path_name, p=True, f=True)[0]
+                    self.shape_transform_dict[mesh_path_name] = transform_name
+                    
             if node != mesh_path_name:
                 iter.next()
                 continue
-            
+                
             #print 'get current vtx :', node, mesh_path_name
             skinFn, vtxArray, skinName = self.adust_to_vertex_list(meshDag, component, force=True)
+            #vtxArray = []
             #print 'get vtx array :', vtxArray
             vtxArrays += sorted(vtxArray)
             #return vtxArray

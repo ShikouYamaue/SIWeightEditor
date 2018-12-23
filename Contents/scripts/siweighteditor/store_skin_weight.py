@@ -13,6 +13,9 @@ class StoreSkinWeight():
         self.om_get_skin_weight()
         #self.om_selected_mesh_vertex()
         
+    #ノード名、ノードタイプキャッシュ
+    node_type_dict = {}
+    shape_transform_dict = {}
     #指定ノード中の選択バーテックスを返す
     def om_selected_mesh_vertex(self, node, show_bad=False):
         sList = om.MSelectionList()
@@ -39,8 +42,19 @@ class StoreSkinWeight():
                 continue
             
             mesh_path_name = meshDag.fullPathName()
-            if cmds.nodeType(mesh_path_name) == 'mesh':
-                mesh_path_name = cmds.listRelatives(mesh_path_name, p=True, f=True)[0]
+            try:
+                node_type = self.node_type_dict[mesh_path_name]
+            except:
+                node_type = cmds.nodeType(mesh_path_name)
+                self.node_type_dict[mesh_path_name] = node_type
+                
+            if node_type == 'mesh':
+                try:
+                    mesh_path_name = self.shape_transform_dict[mesh_path_name]
+                except:
+                    transform_name = cmds.listRelatives(mesh_path_name, p=True, f=True)[0]
+                    self.shape_transform_dict[mesh_path_name] = transform_name
+                    
             if node != mesh_path_name:
                 iter.next()
                 continue
