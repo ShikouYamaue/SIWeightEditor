@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.3.3'
+VERSION = 'r1.3.4'
 
 TITLE = "SIWeightEditor"
     
@@ -69,7 +69,7 @@ ZERO_CELL_DARKEN = 60
 WIDGET_HEIGHT = 32
 BUTTON_HEIGHT = 22
 
-#トランスファークラスをインスタンス化しておく
+#トランスファークラスのいれものだけ。インスタンス化はコンストラクタで。
 WEIGHT_TRANSFER_MULTIPLE = None
 
 #速度計測結果を表示するかどうか
@@ -95,7 +95,6 @@ def load_plugin():
 
     
 def timer(func):
-    #戻す用関数を定義
     def wrapper(*args, **kwargs):
         start = time.time()#開始時間
         func(*args, **kwargs)#関数実行
