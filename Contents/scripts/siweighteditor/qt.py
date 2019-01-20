@@ -28,7 +28,6 @@ except:
 #MayaWindow単独取得関数
 def get_maya_window():
     try:
-        import shiboken
         return shiboken.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
     except:
         return None
