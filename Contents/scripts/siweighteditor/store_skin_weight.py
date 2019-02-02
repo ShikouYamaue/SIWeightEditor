@@ -54,7 +54,7 @@ class StoreSkinWeight():
                 except:
                     transform_name = cmds.listRelatives(mesh_path_name, p=True, f=True)[0]
                     self.shape_transform_dict[mesh_path_name] = transform_name
-                    
+                    mesh_path_name = transform_name
             if node != mesh_path_name:
                 iter.next()
                 continue
