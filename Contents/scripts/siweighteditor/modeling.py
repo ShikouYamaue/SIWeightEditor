@@ -131,7 +131,7 @@ class ClusterCopy():
 #ポリゴンメッシュをウェイト付きで複製する関数
 def duplicate_with_skin(nodes, parentNode=None):
     #親子付けがあってもエラーはかないように修正
-    print nodes
+    #print nodes
     # リストタイプじゃなかったらリストに変換する
     if not isinstance(nodes, list):
         nodes = [nodes]
@@ -183,7 +183,7 @@ def cehck_zero_poly_object(mesh=None, pop_msg=True):
         cmds.select(zeroPolyObj, r=True)
     return zeroPolyObj
     
-#スキニングを保ったままメッシュマージする関数
+#スキニングを保ったままメッシュマージするクラス
 class MeshMarge():
     def main(self, objects):
         self.objects= objects
@@ -241,8 +241,9 @@ class MeshMarge():
                 pm.parent(target_mesh, p_node[0])
                 for lock_list, attr_list in zip(all_lock_list, all_attr_list):
                     for lock, attr in zip(lock_list, attr_list):
-                        continue
-                        pm.setAttr(target_mesh[0]+attr, lock=lock)
+                        #continue
+                        #print 'lock attr :', lock, target_mesh, attr
+                        pm.setAttr(target_mesh+attr, lock=lock)
                 break
         pm.rename(target_mesh, objects[0])
         pm.select(target_mesh)

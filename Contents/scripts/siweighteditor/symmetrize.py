@@ -183,11 +183,11 @@ class WeightSymmetrize():
         #オブジェクト単位でのシンメトリ
         if meshes is not None:
             if len(meshes) == 1:
-                mirrorDir = cmds.confirmDialog( title=self.msg03.output, 
-                                                            message=self.msg00.output, 
-                                                            button=[self.msg01.output, self.msg02.output], 
-                                                            defaultButton=self.msg01.output, 
-                                                            cancelButton=self.msg02.output, 
+                mirrorDir = cmds.confirmDialog( title=self.msg03, 
+                                                            message=self.msg00, 
+                                                            button=[self.msg01, self.msg02], 
+                                                            defaultButton=self.msg01, 
+                                                            cancelButton=self.msg02, 
                                                             dismissString='escape')
                 if mirrorDir == 'escape':
                     return

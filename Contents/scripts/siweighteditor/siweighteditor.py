@@ -53,7 +53,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.3.6'
+VERSION = 'r1.3.7'
 
 TITLE = "SIWeightEditor"
     
@@ -114,7 +114,7 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
     focused = Signal()
     keypressed = Signal()
     mousepressed = Signal()
-    
+    wheel_flag = False
     def __init__(self, parent=None):
         super(self.__class__, self).__init__(parent)
         self.installEventFilter(self)
@@ -138,6 +138,7 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
                 self.setValue(self.value()+delta*0.1*MAXIMUM_WEIGHT)
             else:
                 self.setValue(self.value()+delta*0.01*MAXIMUM_WEIGHT)
+            self.wheel_flag = True
             cmds.evalDeferred(self.emit_wheel_event)
         if event.type() == QEvent.KeyPress:
             self.keypressed.emit()
@@ -147,6 +148,7 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
         
     def emit_wheel_event(self):
         self.wheeled.emit()
+        self.wheel_flag = False
         
     #入力窓を選択するジョブ
     def sel_all_input(self):
@@ -1510,8 +1512,8 @@ class WeightEditorWindow(qt.DockWindow):
         
         seach_layout.addWidget(QLabel(' '))
         
-        tip = lang.Lang(en='Interactive search', 
-                            ja=u'インタラクティブ検索').output()
+        tip = lang.Lang(en='Incremental search', 
+                            ja=u'インクリメンタルサーチ').output()
         self.interactive_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=18, w_min=18, h_max=18, h_min=18, 
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, icon=self.icon_path+'i.png', tip=tip)
         seach_layout.addWidget(self.interactive_but)
@@ -2946,7 +2948,11 @@ class WeightEditorWindow(qt.DockWindow):
     editing_count = 0
     @timer
     def calc_cell_value(self, from_spinbox=False, from_input_box=False, from_slider=False):
+        #print 'calc cell value :'
         self.from_spinbox = from_spinbox
+        wheel_flag = self.weight_input.wheel_flag#ウィンドウのフォーカス外れていてもホイール時は更新するフラグ
+        #print 'wheel flag :', wheel_flag
+        
         
         if self.closed_flag:#ウィンドウ閉じた後は何もしない
             #print 'allready closed return :'
@@ -2955,14 +2961,14 @@ class WeightEditorWindow(qt.DockWindow):
         if self.from_spinbox:
             #print 'from spin box !!:'
             self.from_spinbox = False
-            if not self.weight_input.hasFocus():
+            if not self.weight_input.hasFocus() and not wheel_flag:
                 #print 'from spin box and not focus return:'
                 if self.re_forcus_flag:
                     self.weight_input.setFocus()
                 return
             #return
             
-        if not self.change_flag and from_slider:
+        if not self.change_flag and from_slider and not wheel_flag:
             #print 'not change return :'
             self.from_spinbox = False
             return
@@ -2983,7 +2989,6 @@ class WeightEditorWindow(qt.DockWindow):
                 #print 'from spin box 1st go :'
                 self.re_forcus_flag = True
             self.editing_count += 1
-        
         #絶対値モードでフォーカス外したときに0だった時の場合分け
         '''
         if from_spinbox and not self.key_pressed and not from_input_box:
@@ -2994,6 +2999,11 @@ class WeightEditorWindow(qt.DockWindow):
         '''
         #print 'calc Cell value *+*+**+*+*+*+**+*:', self.caluc_times
         #入力重複回避ここまで------------------------------------------------------------
+        #ウィンドウが非アクティブの場合はアクティブにする
+        if not self.isActiveWindow():
+            #print 'set active window :'
+            QApplication.setActiveWindow(self)
+        
         self.counter.reset()
         self.text_value_list = []
         self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
