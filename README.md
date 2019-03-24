@@ -141,6 +141,18 @@ Maya標準機能のウェイトハンマーを選択したセル頂点に対し�
 
 ![siweighteditor11](https://user-images.githubusercontent.com/28256498/41798700-9dc21404-76a9-11e8-9431-b7b69175238e.gif)
 
+### ウェイト値0.0のセルを変更しないウェイトハンマーとスムース
+
+![weight_smooth](https://user-images.githubusercontent.com/28256498/54880859-16b7a480-4e8d-11e9-8ece-db6e44f59fc3.png)
+
+標準機能のスムースをUI上から実行できるようになりました。  
+
+また元のウェイト値が0.0の箇所は値が変わらないカスタムウィトハンマー、ウェイトスムース機能も追加。  
+元から使用しているインフルエンスのみでスムージングしたい場合に。  
+スムースボタン右クリックでスムース設定ウィンドウを開きます。  
+
+![weight_Hammer_Smooth](https://user-images.githubusercontent.com/28256498/54880725-72812e00-4e8b-11e9-8e3a-23e22faad107.gif)
+
 ### Freeze / Freeze_M
 
 ![image](https://user-images.githubusercontent.com/28256498/42168224-5c725550-7e4b-11e8-8cfc-988251d9cfb1.png)
@@ -206,6 +218,39 @@ SIのGatorライクなウェイト転写機能です。
 複数インフルエンスから複数インフルエンスの移動にも対応しています。  
 
 ![weight3](https://user-images.githubusercontent.com/28256498/45917665-014dc780-beb6-11e8-8b7c-f1342be82107.gif)
+
+### Vertex Weight Copy / Paste
+
+![weight_vtx_cp](https://user-images.githubusercontent.com/28256498/54880877-3e0e7180-4e8d-11e9-8ade-e456ebb1f537.png)
+
+頂点単位でのウェイト移植機能です。  
+
+標準機能と違い、複数の頂点コピー→複数の頂点ペーストに対応しています。  
+ペースト頂点がコピー頂点より多い場合は最初の値に戻って繰り返しペーストされます。  
+ウェイトロック機能とは併用不可です。  
+
+またペースト先にインフルエンスが設定されていない場合は自動追加されます。  
+
+![weight_vtx_copy](https://user-images.githubusercontent.com/28256498/54880762-081cbd80-4e8c-11e9-8930-395ca1e04faf.gif)
+
+### Excel like Cell Copy / Paste
+
+![weight_cell_cp](https://user-images.githubusercontent.com/28256498/54880884-5c746d00-4e8d-11e9-8448-5c5ee79c8b4d.png)
+
+エクセルライクな範囲セルのコピー/ペースト機能です。  
+
+指定範囲をコピーして、インフルエンスの違いにかかわらず範囲ペーストができます。  
+矩形だけでなく飛び地選択でのコピーペーストも可能。  
+ペースト範囲がコピー範囲より大きい場合は繰り返しペーストされます。  
+ウェイトロックとの併用ん可能です。  
+
+![weight_cell_copy](https://user-images.githubusercontent.com/28256498/54880791-634eb000-4e8c-11e9-8652-28c6f5d973a0.gif)
+
+こちらの機能は右クリックメニューからも呼び出し可能です。  
+セルの範囲内では ctrl or shift + 右クリックで呼び出しです。(右クリック入力とかぶるため)  
+セルの範囲外は直接右クリックでOK。  
+
+![weight_cell_copy_menu](https://user-images.githubusercontent.com/28256498/54880830-bfb1cf80-4e8c-11e9-8d60-240699a2e092.gif)
 
 ###  Symmetry機能
 
@@ -286,6 +331,12 @@ UI上の選択からスキンに対してインフルエンスの追加削除が
 
 ![weight1](https://user-images.githubusercontent.com/28256498/45583890-04204980-b905-11e8-8719-2dda7bbcafc4.png)
 
+### Remove Unused Influences
+![weight_rem_unuse_inf](https://user-images.githubusercontent.com/28256498/54880904-96457380-4e8d-11e9-96de-4a046d8d4a6d.png)
+
+使用していないインフルエンスの削除。標準機能の呼び出しです。  
+
+![weight_remove_unuse_inf](https://user-images.githubusercontent.com/28256498/54880893-7ada6880-4e8d-11e9-8044-3f4d3204d88b.gif)
 
 ## オプション機能
 
