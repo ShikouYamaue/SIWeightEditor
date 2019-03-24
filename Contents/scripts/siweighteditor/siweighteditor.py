@@ -34,6 +34,8 @@ from . import symmetrize
 from . import joint_rule_editor
 from . import go
 from . import prof
+from . import smooth_setting_editor
+reload(smooth_setting_editor)
 reload(prof)
 
 import imp
@@ -53,7 +55,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.3.7'
+VERSION = 'r1.3.8'
 
 TITLE = "SIWeightEditor"
     
@@ -95,6 +97,8 @@ def load_plugin():
 
     
 def timer(func):
+    return func#タイマー止める
+    
     def wrapper(*args, **kwargs):
         start = time.time()#開始時間
         func(*args, **kwargs)#関数実行
@@ -104,8 +108,6 @@ def timer(func):
         print '-'*50
     return wrapper
     
-def timer(func):
-    return func
     
         
 #イベント追加したカスタムスピンボックス
@@ -305,7 +307,7 @@ class MyHeaderView(QHeaderView):
         
     #セクションが範囲選択された時のスロット
     def section_enter(self, e):
-        print 'section_enter',e
+        print 'section_enter', e
 
     #@prof.profileFunction()
     def paintSection(self, painter, rect, index):
@@ -413,6 +415,10 @@ class TableModel(QAbstractTableModel):
         self.weight_lock_cells = set()
         self.header_list = influences
         self.header_color_list = header_color_list
+        self.copy_cell_list = []#コピーしたセルの一覧
+        self.copy_vertex_rows = []
+        
+        #データをクラス内変数として保持
         self._data = data
     
     #ヘッダーを設定する関数をオーバーライド
@@ -476,11 +482,14 @@ class TableModel(QAbstractTableModel):
                         ]
     v_header_text = [220]*3
     v_header_bg = [100]*3
-    under_weight_color = [230,54,54]
-    over_weight_color = [210,116,32]
-    over_influence_color = [210,190,40]
+    under_weight_color = [230, 54, 54]
+    over_weight_color = [210, 116, 32]
+    over_influence_color = [210, 190, 40]
     lock_weight_bg_color = [100]*3
     lock_weight_text_color = [160]*3
+    cell_copy_color = [90, 120, 90]
+    vertex_copy_color = [90, 90, 120]
+    cell_vertex_copy_color = [70, 120, 120]
     
     #データ設定関数をオーバーライド流れてくるロールに応じて処理
     def data(self, index, role=Qt.DisplayRole):
@@ -502,6 +511,12 @@ class TableModel(QAbstractTableModel):
             if row in self.mesh_rows:
                 color_id = self.header_color_list[column]
                 return QColor(*self.joint_color_list[color_id])
+            if row in self.copy_vertex_rows and index in self.copy_cell_list:
+                return QColor(*self.cell_vertex_copy_color)
+            if row in self.copy_vertex_rows:
+                return QColor(*self.vertex_copy_color)
+            if index in self.copy_cell_list:
+                return QColor(*self.cell_copy_color)
             if (row, column) in self.weight_lock_cells:
                 return QColor(*self.lock_weight_bg_color)
         elif role == Qt.ForegroundRole:
@@ -547,7 +562,7 @@ class TableModel(QAbstractTableModel):
             local_column = inf_id_list[column]
             value  = self._data[row][local_column]
         except Exception as e:
-            print 'get data error :', e
+            #print 'get data error :', e
             value = None
         return value
         
@@ -1073,17 +1088,18 @@ class WeightEditorWindow(qt.DockWindow):
         lock_layout.addWidget(self.weight_unlock_but)
         lock_layout.addWidget(self.weight_lock_clear_but)
         
-        #計算モードボタンをはめる
+        #計算モードボタンをはめる----------------------------------------------------------------------------------------------------------------------------------
         mode_widget = QWidget()
         mode_widget.setGeometry(QRect(0, 0, 0 ,0))
         mode_layout = QHBoxLayout()
-        mode_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         mode_widget.setLayout(mode_layout)
+        mode_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         but_w = 38
         norm_w =68
         space = 26
-        mode_widget.setMinimumWidth(but_w*3+norm_w*2+space)
-        mode_widget.setMaximumWidth(but_w*3+norm_w*2+space)
+        length = but_w * 3 + norm_w * 2 + space 
+        mode_widget.setMinimumWidth(length)
+        mode_widget.setMaximumWidth(length)
         mode_widget.setMaximumHeight(WIDGET_HEIGHT)
         self.mode_but_group = QButtonGroup()
         tip = lang.Lang(en='Values entered represent absolute values', ja=u'絶対値で再入力').output()
@@ -1123,6 +1139,7 @@ class WeightEditorWindow(qt.DockWindow):
         mode_layout.addWidget(self.norm_but)
         mode_layout.addWidget(self.no_limit_but)
         
+        #-----------------------------------------------------------------------------------------------------------------------------------
         #ジョイント選択ツールタイプ
         sel_joint_widget = QWidget()
         sel_joint_widget.setGeometry(QRect(0, 0, 0 ,0))
@@ -1173,18 +1190,15 @@ class WeightEditorWindow(qt.DockWindow):
         
         #-----------------------------------------------------------------------------------------------------
         #サブツール群を配置
-        sub_tool_widget = QWidget()
-        sub_tool_widget.setGeometry(QRect(0, 0, 0 ,0))
-        sub_tool_layout = QHBoxLayout()
-        sub_tool_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
-        sub_tool_widget.setLayout(sub_tool_layout)
-        if MAYA_VER >= 2016:
-            size = 212 + 50
-        else:
-            size = 190 + 50
-        sub_tool_widget.setMinimumWidth(size)
-        sub_tool_widget.setMaximumWidth(size)
-        sub_tool_widget.setMaximumHeight(WIDGET_HEIGHT)
+        sub_tool0_widget = QWidget()
+        sub_tool0_widget.setGeometry(QRect(0, 0, 0 ,0))
+        sub_tool0_layout = QHBoxLayout()
+        sub_tool0_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        sub_tool0_widget.setLayout(sub_tool0_layout)
+        size = 160
+        sub_tool0_widget.setMinimumWidth(size)
+        sub_tool0_widget.setMaximumWidth(size)
+        sub_tool0_widget.setMaximumHeight(WIDGET_HEIGHT)
         
         #サブツール類のレイアウト
         #label = QLabel('Sub Tools :')
@@ -1195,10 +1209,42 @@ class WeightEditorWindow(qt.DockWindow):
                             ja=u'・Weight Hummer\n\n選択セルの頂点にウェイトハンマーを実行する').output()
         self.hummer_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'hummer.png', tip=tip)
-        self.hummer_but.clicked.connect(self.hummer_weight)
-        sub_tool_layout.addWidget(self.hummer_but)
+        self.hummer_but.clicked.connect(qt.Callback(self.hammer_weight))
+        sub_tool0_layout.addWidget(self.hummer_but)
         
-        sub_tool_layout.addWidget(QLabel('  '))
+        #キープゼロウェイトハンマー
+        tip = lang.Lang(en='*Weight Hummer\n\nExecute a weight hammer at the vertex of the selected cell\n'+\
+                            '*Hold weight value 0.0', 
+                            ja=u'・Weight Hummer\n\n選択セルの頂点にウェイトハンマーを実行する\n' +\
+                            u'※ウェイト値0.0を維持する'
+                            ).output()
+        self.keep_zero_hummer_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'hummer_zero.png', tip=tip)
+        self.keep_zero_hummer_but.clicked.connect(qt.Callback(lambda : self.hammer_weight(keep_zero=True)))
+        sub_tool0_layout.addWidget(self.keep_zero_hummer_but)
+        
+        sub_tool0_layout.addWidget(QLabel('  '))
+        
+        #ウェイトスムース
+        tip = lang.Lang(en='*Smooth skin weights \ Right-click to open the smooth option window', 
+                            ja=u'・スキンウェイトのスムーズを実行\n右クリックでスムーズ設定ウィンドウを開く').output()
+        self.smooth_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'smooth.png', tip=tip)
+        self.smooth_but.clicked.connect(qt.Callback(self.smooth_weight))
+        self.smooth_but.rightClicked.connect(self.open_smooth_setting_editor)
+        sub_tool0_layout.addWidget(self.smooth_but)
+        
+        #キープゼロウェイトスムース
+        tip = lang.Lang(en='*Smooth skin weights \ Right-click to open the smooth option window\n*Hold weight value 0.0', 
+                            ja=u'・スキンウェイトのスムーズを実行\n右クリックでスムーズ設定ウィンドウを開く\n※ウェイト値0.0を維持する').output()
+        self.keep_zero_smooth_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'smooth_zero.png', tip=tip)
+        self.keep_zero_smooth_but.clicked.connect(qt.Callback(lambda : self.smooth_weight(keep_zero=True)))
+        self.keep_zero_smooth_but.rightClicked.connect(self.open_smooth_setting_editor)
+        sub_tool0_layout.addWidget(self.keep_zero_smooth_but)
+        
+        
+        sub_tool0_layout.addWidget(QLabel('  '))
         
         #フリーズ
         tip = lang.Lang(en='*Freeze\n\nDelete all history and write back deformer cluster and blend shape\nEasy history cleanup function', 
@@ -1206,7 +1252,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.freeze_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'freeze.png', tip=tip)
         self.freeze_but.clicked.connect(qt.Callback(self.freeze))
-        sub_tool_layout.addWidget(self.freeze_but)
+        sub_tool0_layout.addWidget(self.freeze_but)
         
         #フリーズM
         tip = lang.Lang(en='*Freeze_M\n\nAfter deleting all history, write back skin weight, deformer cluster, blend shape \n'+\
@@ -1218,17 +1264,28 @@ class WeightEditorWindow(qt.DockWindow):
         self.freeze_m_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'freeze_m.png', tip=tip)
         self.freeze_m_but.clicked.connect(qt.Callback(self.freeze_m))
-        sub_tool_layout.addWidget(self.freeze_m_but)
-        
-        sub_tool_layout.addWidget(QLabel('  '))
+        sub_tool0_layout.addWidget(self.freeze_m_but)
        
+        #サブツール群を配置
+        sub_tool1_widget = QWidget()
+        sub_tool1_widget.setGeometry(QRect(0, 0, 0 ,0))
+        sub_tool1_layout = QHBoxLayout()
+        sub_tool1_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        sub_tool1_widget.setLayout(sub_tool1_layout)
+        if MAYA_VER >= 2016:
+            size = 212 + 68
+        else:
+            size = 190 + 68
+        sub_tool1_widget.setMinimumWidth(size)
+        sub_tool1_widget.setMaximumWidth(size)
+        sub_tool1_widget.setMaximumHeight(WIDGET_HEIGHT)
         #ウェイトコピー
         tip = lang.Lang(en='*Simple_Weight_Copy\n\nCopy the mesh weight \nWrite it out externally as a temporary file', 
                             ja=u'・Simple_Weight_Copy\n\nメッシュのウェイトをコピーします\n一時ファイルとして外部に書き出し').output()
         self.simple_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'simple_copy.png', tip=tip)
         self.simple_copy_but.clicked.connect(qt.Callback(self.weight_copy))
-        sub_tool_layout.addWidget(self.simple_copy_but)
+        sub_tool1_layout.addWidget(self.simple_copy_but)
 
         #ウェイトペースト
         tip = lang.Lang(en='*Simple_Weight_Paste(Name / Index)\n\nPaste the weight of the mesh from the copy information \nWrite back with mesh name and vertex number', 
@@ -1236,7 +1293,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.simple_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'simple_topology.png', tip=tip)
         self.simple_paste_but.clicked.connect(qt.Callback(self.weight_paste))
-        sub_tool_layout.addWidget(self.simple_paste_but)
+        sub_tool1_layout.addWidget(self.simple_paste_but)
         
         #ウェイトペーストポジション
         if MAYA_VER >= 2016:#Maya2016以上はNearestが使える
@@ -1245,9 +1302,9 @@ class WeightEditorWindow(qt.DockWindow):
             self.simple_paste_position_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                         flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'simple_position.png', tip=tip)
             self.simple_paste_position_but.clicked.connect(qt.Callback(lambda : self.weight_paste(method='nearest', threshold=2.0)))
-            sub_tool_layout.addWidget(self.simple_paste_position_but)
+            sub_tool1_layout.addWidget(self.simple_paste_position_but)
         
-        sub_tool_layout.addWidget(QLabel('  '))
+        sub_tool1_layout.addWidget(QLabel('  '))
         
         #ウェイトトランスファー
         tip = lang.Lang(en='*Transfer_Weight_Multiple / Copy\n\nWeight Specify the transfer source mesh \nMultiple meshes can be specified', 
@@ -1255,7 +1312,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.transfer_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'transfer_copy.png', tip=tip)
         self.transfer_copy_but.clicked.connect(qt.Callback(self.weight_transfer_copy))
-        sub_tool_layout.addWidget(self.transfer_copy_but)
+        sub_tool1_layout.addWidget(self.transfer_copy_but)
         
         #ウェイトトランスファー
         tip = lang.Lang(en='*Transfer_Weight_Multiple / Transfer\n\nWait transfer source Weight is transferred from the specified mesh to the selected mesh \nMultiple mesh can be specified', 
@@ -1263,16 +1320,16 @@ class WeightEditorWindow(qt.DockWindow):
         self.transfer_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'transfer_paste.png', tip=tip)
         self.transfer_paste_but.clicked.connect(qt.Callback(self.weight_transfer_paste))
-        sub_tool_layout.addWidget(self.transfer_paste_but)
+        sub_tool1_layout.addWidget(self.transfer_paste_but)
         
-        sub_tool_layout.addWidget(QLabel('  '))
+        sub_tool1_layout.addWidget(QLabel('  '))
         #ウェイトムーブコピー
         tip = lang.Lang(en='*Move Inflence Weight / Copy\n\nSet the influence of the weight transfer source from the selected cell \nMultiple designation possible', 
                             ja=u'・Move Inflence Weight / Copy\n\n選択セルからウェイト移動元のインフルエンスを設定\n複数指定可能').output()
         self.move_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'move_copy.png', tip=tip)
         self.move_copy_but.clicked.connect(qt.Callback(self.copy_move_influences))
-        sub_tool_layout.addWidget(self.move_copy_but)
+        sub_tool1_layout.addWidget(self.move_copy_but)
         
         #ウェイトムーブペースト
         tip = lang.Lang(en='*Move Inflence Weight / Paste\n\nWeight Distribute the influence weight specified as the source of movement evenly over the influence of the selected cell \nMultiple cells can be specified', 
@@ -1280,8 +1337,43 @@ class WeightEditorWindow(qt.DockWindow):
         self.move_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'move_paste.png', tip=tip)
         self.move_paste_but.clicked.connect(qt.Callback(self.paste_move_influences))
-        sub_tool_layout.addWidget(self.move_paste_but)
+        sub_tool1_layout.addWidget(self.move_paste_but)
         
+        sub_tool1_layout.addWidget(QLabel('  '))
+        
+        #バーテックスウェイトのコピー
+        tip = lang.Lang(en='*Copy vertex weight \nMultiple rows selectable',
+                                ja=u'・頂点ウェイトのコピー\n複数行選択可').output()
+        self.vertex_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'vtx_copy.png', tip=tip)
+        self.vertex_copy_but.clicked.connect(self.vertex_copy)
+        sub_tool1_layout.addWidget(self.vertex_copy_but)
+        
+        #バーテックスウェイトのペースト
+        tip = lang.Lang(en='*Paste vertex weight \nMultiple rows selectable\nInsufficient influence is added automatically',
+                                ja=u'・頂点ウェイトのペースト\n複数行選択可\n※不足しているインフルエンスは自動追加されます').output()
+        self.vertex_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'vtx_paste.png', tip=tip)
+        self.vertex_paste_but.clicked.connect(qt.Callback(self.vertex_paste))
+        sub_tool1_layout.addWidget(self.vertex_paste_but)
+        
+        sub_tool1_layout.addWidget(QLabel('  '))
+        
+        #セルウェイトのコピー
+        tip = lang.Lang(en='*Excel-like cell copy \nMultiple cell selection is possible',
+                                ja=u'・エクセルライクなセルのコピー\n複数セル選択可').output()
+        self.cell_copy_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'cell_copy.png', tip=tip)
+        self.cell_copy_but.clicked.connect(self.cell_copy)
+        sub_tool1_layout.addWidget(self.cell_copy_but)
+        
+        #セルウェイトのペースト
+        tip = lang.Lang(en='*Excel-like cell paste \nMultiple cell selection is possible',
+                                ja=u'・エクセルライクなセルのペースト\n複数セル選択可').output()
+        self.cell_paste_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'cell_paste.png', tip=tip)
+        self.cell_paste_but.clicked.connect(self.cell_paste)
+        sub_tool1_layout.addWidget(self.cell_paste_but)
         #-----------------------------------------------------------------------------------------------------
         #サブツール群を配置
         sub_tool2_widget = QWidget()
@@ -1289,7 +1381,7 @@ class WeightEditorWindow(qt.DockWindow):
         sub_tool2_layout = QHBoxLayout()
         sub_tool2_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool2_widget.setLayout(sub_tool2_layout)
-        size = 230
+        size = 252
         sub_tool2_widget.setMinimumWidth(size)
         sub_tool2_widget.setMaximumWidth(size)
         sub_tool2_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1389,7 +1481,7 @@ class WeightEditorWindow(qt.DockWindow):
         
         sub_tool2_layout.addWidget(QLabel('  '))
         
-        #ウェイトのミュート
+        #インフルエンスの追加
         tip = lang.Lang(en='*Add Influence to Skin'+\
                             'Add joints and meshes directly selected\n'+\
                             'Add by adding influence on UI',
@@ -1401,7 +1493,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.add_inf_but.clicked.connect(qt.Callback(lambda : self.add_remove_influences(mode='add')))
         sub_tool2_layout.addWidget(self.add_inf_but)
         
-        #バインドポーズ
+        #インフルエンスの削除
         tip = lang.Lang(en='*Remove skin influence'+\
                             'Select joint and mesh directly and remove\n'+\
                             'Select influence on UI and remove',
@@ -1412,7 +1504,14 @@ class WeightEditorWindow(qt.DockWindow):
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'inf_rem.png', tip=tip)
         self.rem_inf_but.clicked.connect(qt.Callback(lambda : self.add_remove_influences(mode='remove')))
         sub_tool2_layout.addWidget(self.rem_inf_but)
-        #sub_tool_layout.addStretch(0)
+        
+        #未使用インフルエンスの除去
+        tip = lang.Lang(en='*Remove Unused Influences',
+                            ja=u'・使われていないインフルエンスの除去').output()
+        self.rem_unused_inf_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'inf_clean.png', tip=tip)
+        self.rem_unused_inf_but.clicked.connect(self.remove_unused_influences)
+        sub_tool2_layout.addWidget(self.rem_unused_inf_but)
         
         #ボタン軍の並びを一括設定
         self.but_list.append(show_widget)
@@ -1423,7 +1522,8 @@ class WeightEditorWindow(qt.DockWindow):
         self.but_list.append(decimal_widget)
         self.but_list.append(lock_widget)
         self.but_list.append(mode_widget)
-        self.but_list.append(sub_tool_widget)
+        self.but_list.append(sub_tool0_widget)
+        self.but_list.append(sub_tool1_widget)
         self.but_list.append(sub_tool2_widget)
         
         self.set_column_stretch()#ボタン間隔が伸びないようにする
@@ -1604,10 +1704,11 @@ class WeightEditorWindow(qt.DockWindow):
         msg_layout.addStretch(0)
         
         self.create_job()
-        self.change_add_mode(id=self.mode)
+        #self.change_add_mode(id=self.mode)
         self.change_decimal_digits()
         self.zero_cell_darken()
         self.get_set_skin_weight()
+        self.change_add_mode(id=self.mode)
         
     #MayaUIにドッキングかのうかどうかを変更
     def change_dockable(self):
@@ -1670,6 +1771,8 @@ class WeightEditorWindow(qt.DockWindow):
         self.precalculate_bake_weights(move_weight=True)
         self.counter.lap_print(print_flag=COUNTER_PRINT, window=self)
         
+        
+    #インフルエンスの追加削除
     def add_remove_influences(self, mode=''):
         add_remove_inf_list = []
         for id, inf in enumerate(self.all_influences):
@@ -1700,16 +1803,217 @@ class WeightEditorWindow(qt.DockWindow):
                 if sub_influences:
                     cmds.skinCluster(node, e=True, ri=sub_influences)
                 
-        
         cmds.select(self.original_selection, r=True)
         self.get_set_skin_weight()
         
-    def remove_influences(self):
-        pass
-    
+    #未使用インフルエンスの削除
+    def remove_unused_influences(self):
+        for node in self.hl_nodes:
+            srcSkinCluster = cmds.ls(cmds.listHistory(node), type='skinCluster')
+            srcSkinCluster = srcSkinCluster[0]
+            all_influences = cmds.skinCluster(srcSkinCluster, q=True, inf=True)
+            weighted_influences = cmds.skinCluster(srcSkinCluster, q=True, wi=True)
+            sub_influences = list(set(all_influences) - set(weighted_influences))
+            #print 'unused infs :', sub_influences
+            if sub_influences:
+                cmds.skinCluster(node, e=True, ri=sub_influences)
+        self.get_set_skin_weight()
+                
+    #頂点ウェイトコピーを独自実装
+    copy_weights_list = []
+    copy_influences_list = []
+    def vertex_copy(self):
+        self.copy_vtx_rows = list(set([item.row() for item in self.selected_items]))
+        #row = max(rows)
+        #vertex = self.vtx_row_dict[row][5]
+        #skin_cluster = self.vtx_row_dict[row][1]
+        self.copy_weights_list = []
+        self.copy_influences_list = []
+        for row in self.copy_vtx_rows:
+            self.copy_weights_list.append(self._data[row])
+            self.copy_influences_list.append(self.vtx_row_dict[row][2])
+        #print 'copy vertices :', vertex
+        #print 'copy nfluences :', self.copy_influences_list
+        #print 'copy weights :', self.copy_weights_list
+        #モデルのコピー対象リストを更新
+        self.weight_model.copy_vertex_rows = self.copy_vtx_rows
+        self.sel_model.clearSelection()
+        self.refresh_table_view()
+        
+    #頂点ウェイトのペースト
+    def vertex_paste(self):
+        if not self.copy_weights_list or not self.selected_items:
+            return
+        self.update_rows = set()
+        self.row_column_dict = defaultdict(lambda : [])
+        self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
+        rows = list(set([item.row() for item in self.selected_items]))
+        paste_influences_dict = {}
+        
+        mesh_list = []
+        mesh_inflences_list = []
+        
+        #メッシュに足りないインフルエンスを追加する
+        for row in rows:
+            node = self.vtx_row_dict[row][6]
+            if node in mesh_list:
+                continue
+            mesh_list.append(node)
+            mesh_inflences_list.append(self.vtx_row_dict[row][2])
+        #print 'mesh inf :', mesh_list, mesh_inflences_list
+        copy_influences  = []
+        for influences in self.copy_influences_list:
+            if not influences in copy_influences:
+                copy_influences.append(influences)
+        #コピー元のインフルエンス
+        all_copy_influences = []
+        for influences in copy_influences:
+            all_copy_influences += influences
+        all_copy_influences = list(set(all_copy_influences))
+        #print 'all inf :', all_copy_influences
+        #なければ追加
+        add_inf_flag = False
+        for mesh_inflences, node in zip(mesh_inflences_list, mesh_list):
+            sub_influences = list(set(all_copy_influences) - set(mesh_inflences))
+            #print 'add influences :', node, sub_influences
+            if sub_influences:
+                add_inf_flag = True
+                cmds.skinCluster(node, e=True, ai=sub_influences, lw=True, ug=False, wt=0, ps=0)
+        #追加が発生したらUI更新する
+        if add_inf_flag:
+            self.get_set_skin_weight(cycle=True)
+            #コピーセル情報復元
+            self.weight_model.copy_vertex_rows = self.copy_vtx_rows
+            self.weight_model.copy_cell_list = self.copy_cell_list
+            
+        
+        #選択行にペースト
+        copy_row_count = len(self.copy_influences_list)
+        for i, row in enumerate(rows):
+            #paste_weights = [0.0] * len(self._data[row])
+            paste_weights = self._data[row]
+            paste_influences  = self.vtx_row_dict[row][2]
+            
+            copy_id = i % copy_row_count
+            copy_influences = self.copy_influences_list[copy_id]
+            copy_weights = self.copy_weights_list[copy_id]
+            
+            for i, (pw, pinf) in enumerate(zip(paste_weights, paste_influences)):
+                if pinf in copy_influences:
+                    try:
+                        inf_id = copy_influences.index(pinf)
+                        cw = copy_weights[inf_id]
+                        paste_weights[i] = cw
+                    except:
+                        paste_weights[i] = 0.0
+                else:
+                    paste_weights[i] = 0.0
+            #print 'paste weights :', paste_weights
+            self.update_rows.add(row)
+            
+        #ベイク計算に入る
+        self.precalculate_bake_weights()
+                    
+    #エクセルライクコピー
+    copy_cell_list = []
+    copy_value_list = []
+    copy_relative_pos_list = []#開始位置からの相対位置リスト
+    @timer
+    def cell_copy(self):
+        self.copy_cell_list = self.selected_items
+        #print 'copy cells :', self.copy_cell_list
+        self.weight_model.copy_cell_list = self.copy_cell_list
+        self.sel_model.clearSelection()
+        self.refresh_table_view()
+        
+        #コピーした値をリストにしておく
+        self.copy_value_list = []
+        self.copy_relative_pos_list = []#開始位置からの相対位置リスト
+        
+        if not self.copy_cell_list:
+            return
+            
+        pivot_row = self.copy_cell_list[0].row()
+        pivot_column = self.copy_cell_list[0].column()
+        for cell_id in self.copy_cell_list:
+            row = cell_id.row()
+            column = cell_id.column() 
+            sub_row = row - pivot_row
+            sub_column = column - pivot_column
+            self.copy_relative_pos_list.append([sub_row, sub_column])
+            value = self.weight_model.get_data(row=row, column=column)#もとの値
+            self.copy_value_list.append(value)
+        #コピー・ペーストのバウンディングサイズ
+        min_row = min(self.copy_relative_pos_list, key=lambda x: x[0])[0]
+        max_row = max(self.copy_relative_pos_list, key=lambda x: x[0])[0]
+        min_column = min(self.copy_relative_pos_list, key=lambda x: x[1])[1]
+        max_column = max(self.copy_relative_pos_list, key=lambda x: x[1])[1]
+        self.cell_row_length = max_row - min_row + 1
+        self.cell_column_length = max_column - min_column + 1
+        #print 'length :', self.cell_row_length, self.cell_column_length
+        #print 'copied values :', self.copy_value_list
+        
+    #エクセルライクペースト
+    @timer
+    def cell_paste(self):
+        self.paste_cell_list = self.selected_items
+        if not self.paste_cell_list or not self.copy_value_list:
+            return
+        
+        #繰り返し可能回数を判定
+        start_cell = self.paste_cell_list[0]
+        start_row = start_cell.row()
+        start_column = start_cell.column()
+        start_pos_list = [[start_row, start_column]]#繰り返しスタートセルのリスト
+        ignore_list = self.get_ignore_for_start_pos(start_row, start_column, self.cell_row_length, self.cell_column_length )
+        for cell_id in self.paste_cell_list[1:]:
+            row = cell_id.row()
+            column = cell_id.column() 
+            index = [row, column]
+            if index in ignore_list:
+                continue
+            start_pos_list.append(index)
+            ignore_list += self.get_ignore_for_start_pos(row, column, self.cell_row_length, self.cell_column_length )
+        
+        #開始位置を基準にペースト処理
+        self.update_rows = set()
+        self.row_column_dict = defaultdict(lambda : [])
+        self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
+        for [start_row, start_column] in start_pos_list:
+            for value, pos in zip(self.copy_value_list,  self.copy_relative_pos_list):
+                #新規行列位置
+                row = start_row + pos[0]
+                column = start_column + pos[1]
+                #ロックされてたらスキップ
+                if (row, column) in self.locked_cells:
+                    continue
+                try:
+                #参照リストを直接書き換える
+                    weight_list = self._data[row]
+                    node = self.vtx_row_dict[row][6]
+                    inf_id_list = self.node_influence_id_list_dict[node]
+                    local_column = inf_id_list[column]#空白セルを考慮したローカルカラム取得
+                    weight_list[local_column] = value
+                    #焼き込みようリストを更新しておく
+                    self.update_rows.add(row)
+                    self.row_column_dict[row].append(column)#行に対応する選択カラムを記録する
+                except:
+                    pass
+        #ベイク計算に入る
+        self.precalculate_bake_weights()
+        
+    #ペースト開始地点から次の開始地点までの無視セル一覧を作る
+    def get_ignore_for_start_pos(self, row, column, row_length, column_length):
+        ignore_list = []
+        for add_row, add_column in itertools.product(range(row_length), range(column_length)):
+            ignore_list.append([row + add_row, column + add_column])
+        return ignore_list
+            
+    #フリーズ
     def freeze(self):
         freeze.freeze()
     
+    #フリーズM
     def freeze_m(self):
         freeze.main(pop_zero_poly=True)
     
@@ -1745,14 +2049,78 @@ class WeightEditorWindow(qt.DockWindow):
         
         cmds.evalDeferred(lambda : self.set_message(msg=msg, error=False))
         
-    #ウェイトハンマーの実行、後でちゃんとする
-    def hummer_weight(self):
-        current_selection = cmds.ls(sl=True, l=True)
+    def open_smooth_setting_editor(self):
+        smooth_setting_editor.Option()
+        
+    def hammer_weight(self,  keep_zero=False):
+        #パラメータ決め打ちでスムースする
+        self.weight_smoothing(keep_zero=keep_zero)
+    
+    def smooth_weight(self,  keep_zero=False):
+        save_data = smooth_setting_editor.SubWindow.load_data()
+        #print 'smooth setting :', save_data
+        sw = save_data['weight_difference']
+        swi = save_data['smoothing_iterations']
+        omi = save_data['obey_max_inf']
+        self.weight_smoothing(keep_zero=keep_zero, sw=sw, swi=swi, omi=omi)
+        
+    #ウェイトスムースの実行、後でちゃんとする(※1.3.8でちゃんとしました)
+    def weight_smoothing(self, keep_zero=False, sw=0, swi=5, omi=2, nrm=True):
+        '''
+        #スムースパラメータ
+        sw = 0#weightChangeTolerance
+        swi = 5#numIterations 
+        omi = 2#obeyMaxInfluences 
+        nrm = True#normalizeAfterChange
+        '''
+        #選択情報を整理
         self.setup_update_row_data()#焼きこみ対象の行を設定する
         target_vertices = []
+        mesh_vert_dict = defaultdict(lambda : [])
+        vertex_org_weight_dict = {}#ハンマー前のウェイトを保持する
         for row in self.update_rows:
-            target_vertices.append(self.vtx_row_dict[row][5])
+            node = self.vtx_row_dict[row][6]
+            row_vtx = self.vtx_row_dict[row][5]
+            target_vertices.append(row_vtx)
+            mesh_vert_dict[node] += [row_vtx]
+            vertex_org_weight_dict[row] = self._data[row][:]
+            
+        #スムース実行コマンド版
+        self.hilite_flag = True
+        for node, vertices in mesh_vert_dict.items():
+            mesh_vertices = mesh_vert_dict[node]
+            cmds.select(mesh_vertices, r=True)
+            skin_cluster = self.all_skin_clusters[node]
+            try:
+                cmds.skinCluster(skin_cluster, e=True, sw=sw, swi=swi, omi=omi)
+                if nrm:
+                    cmds.skinCluster(skin_cluster, e=True, fnw=True)
+            except:
+                pass
+        self.hilite_flag = True
+        cmds.select(self.original_selection, r=True)
         
+        self.get_set_skin_weight(node_vtx_dict=self.node_vtx_dict)
+        
+        #ゼロセルを維持する場合
+        if keep_zero:
+            self.get_set_skin_weight()
+            for row in self.update_rows:
+                weights = self._data[row]
+                org_weights = vertex_org_weight_dict[row] 
+                #print 'new weights :', weights
+                #print 'org weights :', org_weights
+                for i, ow in enumerate(org_weights):
+                    if ow == 0.0:
+                        #print 'keep zero', row, i
+                        weights[i] = 0.0
+            #ベイク計算に入る
+            self.precalculate_bake_weights()
+        else:
+            self.get_set_skin_weight(node_vtx_dict=self.node_vtx_dict)
+                    
+        '''
+        #直接ウェイトハンマーのmel呼び出し版
         cmds.undoInfo(swf=False)
         self.hilite_flag = True
         cmds.select(target_vertices, r=True)
@@ -1764,14 +2132,15 @@ class WeightEditorWindow(qt.DockWindow):
         self.hilite_flag = True
         cmds.select(current_selection, r=True)
         cmds.undoInfo(swf=True)
+        '''
         
-        self.get_set_skin_weight(node_vtx_dict=self.node_vtx_dict)
-    
     #-----------------------------------------------------------
+    #セル選択解除
     def clear_selection(self):
         self.sel_model.clearSelection()
         self.weight_input.setValue(0.0)
     
+    #直接入力機能
     numeric_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.']
     def direct_cell_input(self, string):
         if not self.sel_model.selectedIndexes():
@@ -2180,8 +2549,25 @@ class WeightEditorWindow(qt.DockWindow):
                     print 'clear lock error :', skin_cluster, e.message
                     pass
             
+    #コピペ右クリックメニュー
+    def pop_copy_menu(self):
+        copy_menus = QMenu()
+        action = copy_menus.addAction('Copy_Vertex_Weights')
+        action.triggered.connect(self.vertex_copy)
+        action = copy_menus.addAction('Paste_Vertex_Weights')
+        action.triggered.connect(self.vertex_paste)
+        copy_menus.addSeparator()#分割線追加
+        action = copy_menus.addAction('Copy_Cell_Values')
+        action.triggered.connect(self.cell_copy)
+        action = copy_menus.addAction('Paste_Cell_Values')
+        action.triggered.connect(self.cell_paste)
+        cursor = QCursor.pos()
+        copy_menus.exec_(cursor)
+            
     #右クリックしたときの小窓を反映する。
     def get_clicke_item_value(self):
+        shift_mod = qt.check_key_modifiers(Qt.ShiftModifier)
+        ctrl_mod = qt.check_key_modifiers(Qt.ControlModifier)
         #ヘッダーの幅を取得してカラム位置をオフセットする
         v_header = self.view_widget.verticalHeader()
         v_header_width = v_header.sizeHint().width()
@@ -2196,7 +2582,8 @@ class WeightEditorWindow(qt.DockWindow):
         if column == -1:
             column = len(self.all_influences)
         text = self.weight_model.get_data(row=row, column=column)
-        if text is None:
+        if text is None or shift_mod or ctrl_mod:
+            self.pop_copy_menu()
             return
         else:
             text = text*MAXIMUM_WEIGHT
@@ -2238,6 +2625,20 @@ class WeightEditorWindow(qt.DockWindow):
     #加算モード変更時、最大最小と小数点以下桁数を変更する
     #@timer
     def change_add_mode(self, id, change_only=False):
+        #モード変更があった場合はレンジを変更する
+        #print 'add mode :', self.add_mode
+        if id != self.add_mode:
+            #print 'change sld range :', id
+            if id == 0:
+                self.weight_input.setRange(0, MAXIMUM_WEIGHT)
+                self.weight_input.setDecimals(FLOAT_DECIMALS)
+                self.weight_input_sld.setRange(0, 10**FLOAT_DECIMALS*MAXIMUM_WEIGHT)
+            if id == 2 or id == 1:
+                self.weight_input.setRange(-1*MAXIMUM_WEIGHT, MAXIMUM_WEIGHT)
+                self.weight_input.setDecimals(3)
+                self.weight_input_sld.setRange(-1*10**FLOAT_DECIMALS*MAXIMUM_WEIGHT, 10**FLOAT_DECIMALS*MAXIMUM_WEIGHT)
+                self.weight_input_sld.setValue(0)
+        
         self.add_mode = id
         if id == 0:
             if not self.selected_items:
@@ -2267,15 +2668,6 @@ class WeightEditorWindow(qt.DockWindow):
                 self.weight_input_sld.setValue(value* 10**FLOAT_DECIMALS)
                 if change_only:
                     return
-        if id == 0:
-            self.weight_input.setRange(0, MAXIMUM_WEIGHT)
-            self.weight_input.setDecimals(FLOAT_DECIMALS)
-            self.weight_input_sld.setRange(0, 10**FLOAT_DECIMALS*MAXIMUM_WEIGHT)
-        if id == 2 or id == 1:
-            self.weight_input.setRange(-1*MAXIMUM_WEIGHT, MAXIMUM_WEIGHT)
-            self.weight_input.setDecimals(3)
-            self.weight_input_sld.setRange(-1*10**FLOAT_DECIMALS*MAXIMUM_WEIGHT, 10**FLOAT_DECIMALS*MAXIMUM_WEIGHT)
-            self.weight_input_sld.setValue(0)
         self.pre_add_value = 0.0
         self.weight_input.setValue(0)
         self.weight_input_sld.setValue(0)
@@ -2496,7 +2888,7 @@ class WeightEditorWindow(qt.DockWindow):
             elif undo:
                 current_vtx = self.pre_current_vtx_dict[node]
             else:#通常取得
-                #選択ノード数が多いとここがめっちゃ重い
+                #選択ノード数が多いとここがめっちゃ重い※重さ解消済み
                 current_vtx = self.store_skin_weight.om_selected_mesh_vertex(node, show_bad=show_bad)#表示用頂点
             self.pre_current_vtx_dict[node] = current_vtx
             if not current_vtx:#現在の頂点がなければ次へ
@@ -2607,6 +2999,9 @@ class WeightEditorWindow(qt.DockWindow):
         #事前に集めたロック情報をもとにロック設定する
         inf_column_dict_keys = self.inf_column_dict.keys()
         for row, lock_data in self.lock_data_dict.items():
+            node = self.vtx_row_dict[row][6]
+            node_influence_id_dict = self.node_influence_id_dict_dict[node]
+            
             vtx_name = lock_data[0]
             lock_influences = lock_data[1]
             for influence in lock_influences:
@@ -2617,7 +3012,7 @@ class WeightEditorWindow(qt.DockWindow):
                 try:
                     self.vtx_lock_data_dict[vtx_name].add(node_influence_id_dict[influence])
                 except Exception as e:
-                    #print 'lock setting error :', e.message
+                    print 'lock setting error :', e.message
                     pass
                    
         try:#都度メモリをきれいに
@@ -2760,7 +3155,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.hilite_flag = True#get_setしないためのフラグ
         self.counter.count(string='get cell vtx :')
         
-        ##選択場合分け、コンポーネントモードが微妙なので要件等
+        ##選択場合分け、コンポーネントモードが微妙なので要検討
         if not vertices:
             cmds.select(self.original_selection, r=True)
         else:
