@@ -22,7 +22,8 @@ class Option():
             WINDOW.closeEvent(None)
             WINDOW.close()
         except Exception as e:
-            print e.message
+            #print e.message
+            pass
         WINDOW = SubWindow()
         WINDOW.resize(300, 150)
         pos = QCursor.pos()

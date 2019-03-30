@@ -84,7 +84,8 @@ class LineEdit(QLineEdit):
         key = event.key()
         if key == Qt.Key.Key_Control or key == Qt.Key.Key_Shift:
             return
-        super(self.__class__, self).keyPressEvent(event)
+        else:
+            super(self.__class__, self).keyPressEvent(event)
         
 class EditorDoubleSpinbox(QDoubleSpinBox):
     wheeled = Signal()

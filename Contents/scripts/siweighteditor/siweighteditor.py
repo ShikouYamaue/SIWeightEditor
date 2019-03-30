@@ -55,7 +55,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.3.8'
+VERSION = 'r1.3.9'
 
 TITLE = "SIWeightEditor"
     
@@ -68,7 +68,7 @@ MAXIMUM_INFLUENCE_COUNT = 3
 
 ZERO_CELL_DARKEN = 60
 
-WIDGET_HEIGHT = 32
+WIDGET_HEIGHT = 26
 BUTTON_HEIGHT = 22
 
 #トランスファークラスのいれものだけ。インスタンス化はコンストラクタで。
@@ -175,6 +175,17 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
         ctrl_mod = bool(isCtrlPressed)
         return ctrl_mod
         
+#ctrl,shiftでフォーカスが飛ばないカスタムラインエディット
+class EditorLineEdit(QLineEdit):
+    modifired = Signal()
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key.Key_Control or key == Qt.Key.Key_Shift:
+            self.modifired.emit()
+            return
+        else:
+            super(self.__class__, self).keyPressEvent(event)
+            
 class EditorSpinbox(QSpinBox):
     def __init__(self, parent=None):
         super(self.__class__, self).__init__(parent)
@@ -638,7 +649,8 @@ class OptionWindow():
             WINDOW.closeEvent(None)
             WINDOW.close()
         except Exception as e:
-            print 'window close error :', e.message
+            #print 'window close error :', e.message
+            pass
         WINDOW = WeightEditorWindow()
         WINDOW.init_flag=False
         if WINDOW.dockable or offset:
@@ -708,6 +720,7 @@ class WeightEditorWindow(qt.DockWindow):
                     self.dockable = save_data['dockable']
                     self.floating = save_data['floating']
                     self.area=save_data['area']
+                    self.smooth_parcent = save_data['smooth_parcent']
                     return save_data
             except Exception as e:
                 save_data = self.init_save_data()
@@ -745,6 +758,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.dockable = False
         self.floating = True
         self.area = None
+        self.smooth_parcent = 25
         save_data = {}
         save_data['dockable'] = False
         return save_data
@@ -786,6 +800,7 @@ class WeightEditorWindow(qt.DockWindow):
         save_data['dockable'] = self.docking_but.isChecked()
         save_data['floating'] = self.isFloating()
         save_data['area'] = self.dockArea()
+        save_data['smooth_parcent'] = self.smooth_ratio_box.value()
         if not os.path.exists(self.dir_path):
             os.makedirs(self.dir_path)
         with open(self.w_file, 'w') as f:
@@ -800,7 +815,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.wdata = self.load_window_data()
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.icon_path = os.path.join(os.path.dirname(__file__), 'icons/')
-        #OpenMayaでウェイト取得するクラスを実態化しておく
+        #OpenMayaでウェイト取得するクラスをインスタンス化
         self.store_skin_weight = store_skin_weight.StoreSkinWeight()
         #self.setAcceptDrops(True)#ドロップ可能にしておく
         self._init_ui()
@@ -843,13 +858,13 @@ class WeightEditorWindow(qt.DockWindow):
         
         #表示ボタンをはめる
         show_widget = QWidget()
-        show_widget.setGeometry(QRect(0, 0, 0 ,0))
+        #qt.change_widget_color(show_widget, bgColor=[160])
+        show_widget.setContentsMargins(-9, -7, -2 ,2)#マージン設定
         show_layout = QHBoxLayout()
         show_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         show_widget.setLayout(show_layout)
         but_w = 60
-        norm_w =75
-        space = 13
+        space = -4
         show_widget.setMinimumWidth(but_w*5+space)
         show_widget.setMaximumWidth(but_w*5+space)
         show_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -883,13 +898,15 @@ class WeightEditorWindow(qt.DockWindow):
         show_layout.addWidget(self.filter_but)
         show_layout.addWidget(self.highlite_but)
         
-        #不具合行にフォーカスするボタン
+        #不具合行にフォーカスするボタン------------------------------------------------------------------------
         show_bad_widget = QWidget()
+        #qt.change_widget_color(show_bad_widget, bgColor=[255])
+        show_bad_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
         show_bad_layout = QHBoxLayout()
         show_bad_layout.setSpacing(0)
         show_bad_widget.setLayout(show_bad_layout)
         but_w = 70
-        space = 14
+        space = 1
         show_bad_widget.setMinimumWidth(but_w*4+space)
         show_bad_widget.setMaximumWidth(but_w*4+space)
         show_bad_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -916,11 +933,13 @@ class WeightEditorWindow(qt.DockWindow):
         
         #アイコンボタン群
         icon_widget = QWidget()
+        #qt.change_widget_color(icon_widget, bgColor=[255])
+        icon_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
         icon_layout = QHBoxLayout()
         icon_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         icon_widget.setLayout(icon_layout)
         but_w = BUTTON_HEIGHT#常に正方形になるように高さと合わせる
-        space = 10
+        space = -4
         wid_a = but_w*4+space
         tip = lang.Lang(en='Lock display mesh', ja=u'表示メッシュのロック').output()
         self.lock_but = qt.make_flat_btton(name='', bg=self.lock_col, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
@@ -975,14 +994,16 @@ class WeightEditorWindow(qt.DockWindow):
         
         #enforce_limitを設定する
         enforce_widget = QWidget()
+        #qt.change_widget_color(enforce_widget, bgColor=[255])
+        enforce_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
         enforce_layout = QHBoxLayout()
         enforce_layout.setSpacing(4)
         enforce_widget.setLayout(enforce_layout)
-        but_w = 85
-        spin_w = 40
-        space = 24
-        enforce_widget.setMinimumWidth(but_w+spin_w+space)
-        enforce_widget.setMaximumWidth(but_w+spin_w+space)
+        but_w = 84
+        spin_w = 24
+        space = 2
+        enforce_widget.setMinimumWidth(but_w*3+spin_w*3+space)
+        enforce_widget.setMaximumWidth(but_w*3+spin_w*3+space)
         enforce_widget.setMaximumHeight(WIDGET_HEIGHT)
         tip = lang.Lang(en='Enforce the limit on the number of deformers that can affect a given vertex\n* Apply to all vertices by executing without selecting a cell', 
                         ja=u'指定された頂点に影響を与えるデフォーマの数に制限を設定\n※セルを選択せずに実行で全頂点に適用').output()
@@ -990,6 +1011,7 @@ class WeightEditorWindow(qt.DockWindow):
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         self.enforce_but.clicked.connect(self.enforce_limit_and_normalize)
         self.limit_box = EditorSpinbox()
+        self.limit_box.setButtonSymbols(QAbstractSpinBox.NoButtons)
         #self.limit_box.setButtonSymbols(QAbstractSpinBox.NoButtons)
         self.limit_box.setRange(0, 16)
         self.limit_box.setValue(self.limit)
@@ -998,29 +1020,19 @@ class WeightEditorWindow(qt.DockWindow):
         self.limit_box.setMinimumHeight(BUTTON_HEIGHT)
         self.limit_box.valueChanged.connect(self.change_limit_box_color)
         self.limit_box.valueChanged.connect(self.change_limit)
-        enforce_layout.addWidget(self.enforce_but)
-        enforce_layout.addWidget(self.limit_box)
         self.change_limit_box_color()#0の時は何も入力されてないように見えるようにする
         
         global MAXIMUM_INFLUENCE_COUNT
         MAXIMUM_INFLUENCE_COUNT = self.limit
         
         #桁数設定ウィジェット
-        decimal_widget = QWidget()
-        decimal_layout = QHBoxLayout()
-        decimal_layout.setSpacing(4)
-        decimal_widget.setLayout(decimal_layout)
-        but_w = 85
-        spin_w = 40
-        space = 28
-        decimal_widget.setMinimumWidth(but_w*2+spin_w*2+space)
-        decimal_widget.setMaximumWidth(but_w+spin_w+space)
-        decimal_widget.setMaximumHeight(WIDGET_HEIGHT)
+        but_w = 80
         tip = lang.Lang(en='Set the number of decimal places to be displayed', 
                         ja=u'表示される小数点以下の桁数を設定').output()
         self.decimal_but = qt.make_flat_btton(name='Display Digit', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         self.digit_box = EditorSpinbox()
+        self.digit_box.setButtonSymbols(QAbstractSpinBox.NoButtons)
         offset = (1 - self.max_value_but_group.checkedId()) * 2
         self.digit_box.setRange(offset, 7 + offset)
         self.digit_box.setValue(self.digit)
@@ -1035,13 +1047,14 @@ class WeightEditorWindow(qt.DockWindow):
         global FLOAT_FORMAT
         FLOAT_FORMAT = '{:.'+str(FLOAT_DECIMALS)+'f}'
         
-        but_w = 70
+        but_w = 65
         tip = lang.Lang(en='Round off the decimal point with the specified number of digits\n* Apply to all vertices by executing without selecting a celｌ', 
                         ja=u'小数点以下を指定桁数で丸める\n※セルを選択せずに実行で全頂点に適用').output()
         self.round_but = qt.make_flat_btton(name='Round Off', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         self.round_but.clicked.connect(self.round_off)
         self.round_box = EditorSpinbox()
+        self.round_box.setButtonSymbols(QAbstractSpinBox.NoButtons)
         #self.digit_box.setButtonSymbols(QAbstractSpinBox.PlusMinus)
         offset = (1 - self.max_value_but_group.checkedId()) * 2
         self.round_box.setRange(offset, 7 + offset)
@@ -1050,20 +1063,23 @@ class WeightEditorWindow(qt.DockWindow):
         self.round_box.setMinimumWidth(spin_w)
         self.round_box.setMinimumHeight(BUTTON_HEIGHT)
         
-        decimal_layout.addWidget(self.decimal_but)
-        decimal_layout.addWidget(self.digit_box)
+        enforce_layout.addWidget(self.enforce_but)
+        enforce_layout.addWidget(self.limit_box)
+        enforce_layout.addWidget(self.decimal_but)
+        enforce_layout.addWidget(self.digit_box)
+        #enforce_layout.addWidget(QLabel('  '))
+        enforce_layout.addWidget(self.round_but)
+        enforce_layout.addWidget(self.round_box)
         
-        decimal_layout.addWidget(QLabel('  '))
-        decimal_layout.addWidget(self.round_but)
-        decimal_layout.addWidget(self.round_box)
-        
-        #Weightロックボタン
+        #Weightロックボタン------------------------------------------------------------------------------------------------------
         lock_widget = QWidget()
+        #qt.change_widget_color(lock_widget, bgColor=[255])
+        lock_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
         lock_layout = QHBoxLayout()
         lock_layout.setSpacing(0)
         lock_widget.setLayout(lock_layout)
         but_w = 73
-        space = 14
+        space = 2
         lock_widget.setMinimumWidth(but_w*3+space)
         lock_widget.setMaximumWidth(but_w*3+space)
         lock_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1088,67 +1104,18 @@ class WeightEditorWindow(qt.DockWindow):
         lock_layout.addWidget(self.weight_unlock_but)
         lock_layout.addWidget(self.weight_lock_clear_but)
         
-        #計算モードボタンをはめる----------------------------------------------------------------------------------------------------------------------------------
-        mode_widget = QWidget()
-        mode_widget.setGeometry(QRect(0, 0, 0 ,0))
-        mode_layout = QHBoxLayout()
-        mode_widget.setLayout(mode_layout)
-        mode_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
-        but_w = 38
-        norm_w =68
-        space = 26
-        length = but_w * 3 + norm_w * 2 + space 
-        mode_widget.setMinimumWidth(length)
-        mode_widget.setMaximumWidth(length)
-        mode_widget.setMaximumHeight(WIDGET_HEIGHT)
-        self.mode_but_group = QButtonGroup()
-        tip = lang.Lang(en='Values entered represent absolute values', ja=u'絶対値で再入力').output()
-        self.abs_but = qt.make_flat_btton(name='Abs', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
-                                                            flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Values entered are added to exisiting values', ja=u'既存値への加算入力').output()
-        self.add_but = qt.make_flat_btton(name='Add', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
-                                                            flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Values entered are percentages added to exisiting values', ja=u'既存値への率加算入力').output()
-        self.add_par_but = qt.make_flat_btton(name='Add%', bg=self.hilite, border_col=180, w_max=but_w+8, w_min=but_w+8, h_max=but_h, h_min=but_h, 
-                                                                flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Normalize new weights\n\nRight-click forced normalization execution\n*If you execute without selecting a cell, it will be applied to all cells', 
-                                ja=u'新規ウェイトの正規化\n\n右クリックで強制正規化実行\n※セルを選択せずに実行すると全てのセルに適用されます').output()
-        self.norm_but = qt.make_flat_btton(name='Normalize', bg=self.hilite, border_col=180, w_max=norm_w, w_min=norm_w, h_max=but_h, h_min=but_h, 
-                                                            flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Accept weight values ​​greater than 1.0 or 100 in total', ja=u'合計1.0もしくは100以上のウェイト値を許容する').output()
-        self.no_limit_but = qt.make_flat_btton(name='Unlimited', bg=self.hilite, border_col=180, w_max=norm_w, w_min=norm_w, h_max=but_h, h_min=but_h, 
-                                                            flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
-        self.norm_but.clicked.connect(self.toggle_no_limit_but_enable)
-        self.norm_but.rightClicked.connect(lambda : self.enforce_limit_and_normalize(force_norm=True))
-        self.no_limit_but.clicked.connect(self.keep_no_limit_flag)
-        self.mode_but_group.buttonClicked[int].connect(self.change_add_mode)
-        
-        self.norm_but.setChecked(self.norm)
-        self.no_limit_but.setChecked(self.no_limit)
-        self.toggle_no_limit_but_enable()
-        
-        self.mode_but_group.addButton(self.abs_but, 0)
-        self.mode_but_group.addButton(self.add_but, 1)
-        self.mode_but_group.addButton(self.add_par_but, 2)
-        if self.mode < 0:
-            self.mode = 0
-        self.mode_but_group.button(self.mode).setChecked(True)
-        mode_layout.addWidget(self.abs_but)
-        mode_layout.addWidget(self.add_but)
-        mode_layout.addWidget(self.add_par_but)
-        mode_layout.addWidget(self.norm_but)
-        mode_layout.addWidget(self.no_limit_but)
-        
         #-----------------------------------------------------------------------------------------------------------------------------------
         #ジョイント選択ツールタイプ
         sel_joint_widget = QWidget()
+        #qt.change_widget_color(sel_joint_widget, bgColor=[255])
+        sel_joint_widget.setContentsMargins(-9, -7, -10 ,2)#マージン設定
         sel_joint_widget.setGeometry(QRect(0, 0, 0 ,0))
         sel_joint_layout = QHBoxLayout()
         sel_joint_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sel_joint_widget.setLayout(sel_joint_layout)
         but_w = 22
         j_hl_w = 75
-        space = 9
+        space = 4
         sel_joint_widget.setMinimumWidth(but_w*4+j_hl_w+space)
         sel_joint_widget.setMaximumWidth(but_w*4+j_hl_w+space)
         sel_joint_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1187,15 +1154,34 @@ class WeightEditorWindow(qt.DockWindow):
         sel_joint_layout.addWidget(self.t_but)
         sel_joint_layout.addWidget(self.joint_hl_but)
         
+        #ボタン軍の並びを一括設定
+        self.but_list.append(show_widget)
+        self.but_list.append(sel_joint_widget)
+        self.but_list.append(show_bad_widget)
+        self.but_list.append(icon_widget)
+        self.but_list.append(enforce_widget)
+        #self.but_list.append(decimal_widget)
+        self.but_list.append(lock_widget)
+        #self.but_list.append(mode_widget)
+        self.set_column_stretch(self.but_list, self.unique_layout)#ボタンの並び伸びないように固定
+        
+        self.main_layout.addWidget(qt.make_h_line())
         
         #-----------------------------------------------------------------------------------------------------
+        self.unique_layout3 = QGridLayout()#3個目のユニークレイアウト
+        self.unique_layout3.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        self.main_layout.addLayout(self.unique_layout3)
+        self.but_list3 = []
+        
         #サブツール群を配置
         sub_tool0_widget = QWidget()
+        #qt.change_widget_color(sub_tool0_widget, bgColor=[255])
+        sub_tool0_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
         sub_tool0_widget.setGeometry(QRect(0, 0, 0 ,0))
         sub_tool0_layout = QHBoxLayout()
         sub_tool0_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool0_widget.setLayout(sub_tool0_layout)
-        size = 160
+        size =206
         sub_tool0_widget.setMinimumWidth(size)
         sub_tool0_widget.setMaximumWidth(size)
         sub_tool0_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1205,46 +1191,80 @@ class WeightEditorWindow(qt.DockWindow):
         #sub_tool_layout.addWidget(label)
         
         #ウェイトハンマー
-        tip = lang.Lang(en='*Weight Hummer\n\nExecute a weight hammer at the vertex of the selected cell', 
-                            ja=u'・Weight Hummer\n\n選択セルの頂点にウェイトハンマーを実行する').output()
+        tip = lang.Lang(
+                            en='*Weight Hummer\n\n' +\
+                            'Execute a weight hammer at the vertex of the selected cell\n'+\
+                            '*Right-click Run with the application rate of smooth', 
+                            ja=u'・ウェイトハンマー\n\n' +\
+                            u'選択セルの頂点にウェイトハンマーを実行する\n' +\
+                            u'右クリック スムースの適用率を指定して実行'
+                            ).output()
         self.hummer_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'hummer.png', tip=tip)
         self.hummer_but.clicked.connect(qt.Callback(self.hammer_weight))
+        self.hummer_but.rightClicked.connect(qt.Callback(lambda : self.hammer_weight(blend=True)))
         sub_tool0_layout.addWidget(self.hummer_but)
         
         #キープゼロウェイトハンマー
-        tip = lang.Lang(en='*Weight Hummer\n\nExecute a weight hammer at the vertex of the selected cell\n'+\
-                            '*Hold weight value 0.0', 
-                            ja=u'・Weight Hummer\n\n選択セルの頂点にウェイトハンマーを実行する\n' +\
-                            u'※ウェイト値0.0を維持する'
+        tip = lang.Lang(
+                            en='*Weight Hummer\n\nExecute a weight hammer at the vertex of the selected cell\n'+\
+                            '*Hold weight value 0.0\n' +\
+                            '*Right-click Run with the application rate of smooth', 
+                            ja=u'・ウェイトハンマー\n\n選択セルの頂点にウェイトハンマーを実行する\n' +\
+                            u'※ウェイト値0.0を維持する\n' +\
+                            u'右クリック スムースの適用率を指定して実行'
                             ).output()
         self.keep_zero_hummer_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'hummer_zero.png', tip=tip)
         self.keep_zero_hummer_but.clicked.connect(qt.Callback(lambda : self.hammer_weight(keep_zero=True)))
+        self.keep_zero_hummer_but.rightClicked.connect(qt.Callback(lambda : self.hammer_weight(keep_zero=True, blend=True)))
         sub_tool0_layout.addWidget(self.keep_zero_hummer_but)
         
-        sub_tool0_layout.addWidget(QLabel('  '))
+        sub_tool0_layout.addWidget(QLabel(' '))
         
         #ウェイトスムース
-        tip = lang.Lang(en='*Smooth skin weights \ Right-click to open the smooth option window', 
-                            ja=u'・スキンウェイトのスムーズを実行\n右クリックでスムーズ設定ウィンドウを開く').output()
+        tip = lang.Lang(en='*Smooth skin weights \n\nRight-click Run with the application rate of smooth', 
+                            ja=u'・スキンウェイトのスムーズを実行\n\n右クリック スムースの適用率を指定して実行').output()
         self.smooth_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'smooth.png', tip=tip)
         self.smooth_but.clicked.connect(qt.Callback(self.smooth_weight))
-        self.smooth_but.rightClicked.connect(self.open_smooth_setting_editor)
+        self.smooth_but.rightClicked.connect(qt.Callback(lambda : self.smooth_weight(blend=True)))
         sub_tool0_layout.addWidget(self.smooth_but)
         
         #キープゼロウェイトスムース
-        tip = lang.Lang(en='*Smooth skin weights \ Right-click to open the smooth option window\n*Hold weight value 0.0', 
-                            ja=u'・スキンウェイトのスムーズを実行\n右クリックでスムーズ設定ウィンドウを開く\n※ウェイト値0.0を維持する').output()
+        tip = lang.Lang(en='*Smooth skin weights\n\n*Hold weight value 0.0 \n Right-click Run with the application rate of smooth', 
+                            ja=u'・スキンウェイトのスムーズを実行\n\n※ウェイト値0.0を維持する\n右クリック スムースの適用率を指定して実行').output()
         self.keep_zero_smooth_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'smooth_zero.png', tip=tip)
         self.keep_zero_smooth_but.clicked.connect(qt.Callback(lambda : self.smooth_weight(keep_zero=True)))
-        self.keep_zero_smooth_but.rightClicked.connect(self.open_smooth_setting_editor)
+        self.keep_zero_smooth_but.rightClicked.connect(qt.Callback(lambda : self.smooth_weight(keep_zero=True, blend=True)))
         sub_tool0_layout.addWidget(self.keep_zero_smooth_but)
         
         
-        sub_tool0_layout.addWidget(QLabel('  '))
+        sub_tool0_layout.addWidget(QLabel(' '))
+        
+        spin_w = 30
+        tip = lang.Lang(en='*Open Smooth Setting window', 
+                                ja=u'・スムース設定ウィンドウを開く').output()
+        self.smooth_ratio_but = qt.make_flat_btton(name='', bg=self.hilite, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'smooth_setting.png', tip=tip)
+        self.smooth_ratio_but.clicked.connect(self.open_smooth_setting_editor)
+        sub_tool0_layout.addWidget(self.smooth_ratio_but)
+        sub_tool0_layout.addWidget(QLabel(' '))
+        
+        tip = lang.Lang(en='*Specify application rate of smooth and weight hammers \ nSmooth and hammers are applied by right click', 
+                                ja=u'・スムース、ウェイトハンマーの適用率を指定\nスムース、ハンマーを右クリック実行で適用されます').output()
+        self.smooth_ratio_box = EditorSpinbox()
+        self.smooth_ratio_box.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.smooth_ratio_box.setRange(0, 100)
+        self.smooth_ratio_box.setToolTip(tip)
+        self.smooth_ratio_box.setValue(self.smooth_parcent)
+        self.smooth_ratio_box.setMaximumWidth(spin_w)
+        self.smooth_ratio_box.setMinimumWidth(spin_w)
+        self.smooth_ratio_box.setMinimumHeight(BUTTON_HEIGHT)
+        sub_tool0_layout.addWidget(self.smooth_ratio_box)
+        
+        sub_tool0_layout.addWidget(QLabel(' '))
         
         #フリーズ
         tip = lang.Lang(en='*Freeze\n\nDelete all history and write back deformer cluster and blend shape\nEasy history cleanup function', 
@@ -1268,14 +1288,16 @@ class WeightEditorWindow(qt.DockWindow):
        
         #サブツール群を配置
         sub_tool1_widget = QWidget()
+        #qt.change_widget_color(sub_tool1_widget, bgColor=[255])
+        sub_tool1_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
         sub_tool1_widget.setGeometry(QRect(0, 0, 0 ,0))
         sub_tool1_layout = QHBoxLayout()
         sub_tool1_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool1_widget.setLayout(sub_tool1_layout)
         if MAYA_VER >= 2016:
-            size = 212 + 68
+            size = 212 + 40
         else:
-            size = 190 + 68
+            size = 190 + 40
         sub_tool1_widget.setMinimumWidth(size)
         sub_tool1_widget.setMaximumWidth(size)
         sub_tool1_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1304,7 +1326,7 @@ class WeightEditorWindow(qt.DockWindow):
             self.simple_paste_position_but.clicked.connect(qt.Callback(lambda : self.weight_paste(method='nearest', threshold=2.0)))
             sub_tool1_layout.addWidget(self.simple_paste_position_but)
         
-        sub_tool1_layout.addWidget(QLabel('  '))
+        sub_tool1_layout.addWidget(QLabel(' '))
         
         #ウェイトトランスファー
         tip = lang.Lang(en='*Transfer_Weight_Multiple / Copy\n\nWeight Specify the transfer source mesh \nMultiple meshes can be specified', 
@@ -1322,7 +1344,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.transfer_paste_but.clicked.connect(qt.Callback(self.weight_transfer_paste))
         sub_tool1_layout.addWidget(self.transfer_paste_but)
         
-        sub_tool1_layout.addWidget(QLabel('  '))
+        sub_tool1_layout.addWidget(QLabel(' '))
         #ウェイトムーブコピー
         tip = lang.Lang(en='*Move Inflence Weight / Copy\n\nSet the influence of the weight transfer source from the selected cell \nMultiple designation possible', 
                             ja=u'・Move Inflence Weight / Copy\n\n選択セルからウェイト移動元のインフルエンスを設定\n複数指定可能').output()
@@ -1339,7 +1361,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.move_paste_but.clicked.connect(qt.Callback(self.paste_move_influences))
         sub_tool1_layout.addWidget(self.move_paste_but)
         
-        sub_tool1_layout.addWidget(QLabel('  '))
+        sub_tool1_layout.addWidget(QLabel(' '))
         
         #バーテックスウェイトのコピー
         tip = lang.Lang(en='*Copy vertex weight \nMultiple rows selectable',
@@ -1357,7 +1379,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.vertex_paste_but.clicked.connect(qt.Callback(self.vertex_paste))
         sub_tool1_layout.addWidget(self.vertex_paste_but)
         
-        sub_tool1_layout.addWidget(QLabel('  '))
+        sub_tool1_layout.addWidget(QLabel(' '))
         
         #セルウェイトのコピー
         tip = lang.Lang(en='*Excel-like cell copy \nMultiple cell selection is possible',
@@ -1377,11 +1399,13 @@ class WeightEditorWindow(qt.DockWindow):
         #-----------------------------------------------------------------------------------------------------
         #サブツール群を配置
         sub_tool2_widget = QWidget()
+        #qt.change_widget_color(sub_tool2_widget, bgColor=[255])
+        sub_tool2_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
         sub_tool2_widget.setGeometry(QRect(0, 0, 0 ,0))
         sub_tool2_layout = QHBoxLayout()
         sub_tool2_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool2_widget.setLayout(sub_tool2_layout)
-        size = 252
+        size = 226
         sub_tool2_widget.setMinimumWidth(size)
         sub_tool2_widget.setMaximumWidth(size)
         sub_tool2_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1429,7 +1453,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.marge_but.clicked.connect(qt.Callback(lambda : modeling.MeshMarge().main(cmds.ls(sl=True, l=True))))
         sub_tool2_layout.addWidget(self.marge_but)
         
-        sub_tool2_layout.addWidget(QLabel('  '))
+        sub_tool2_layout.addWidget(QLabel(' '))
         
         #ウェイトのミュート
         tip = lang.Lang(en='*Toggle_Mute_Skinning \n\nToggle the muting state of the selected mesh skinning \n If you do not select anything, apply it to all skin meshes', 
@@ -1447,7 +1471,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.bind_pose_but.clicked.connect(lambda : mel.eval('gotoBindPose;'))
         sub_tool2_layout.addWidget(self.bind_pose_but)
         
-        sub_tool2_layout.addWidget(QLabel('  '))
+        sub_tool2_layout.addWidget(QLabel(' '))
         
         #Go Maya Exoport
         tip = lang.Lang(en='*Go_Maya_Export\n\n'+\
@@ -1479,7 +1503,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.go_import_but.clicked.connect(go.maya_import)
         sub_tool2_layout.addWidget(self.go_import_but)
         
-        sub_tool2_layout.addWidget(QLabel('  '))
+        sub_tool2_layout.addWidget(QLabel(' '))
         
         #インフルエンスの追加
         tip = lang.Lang(en='*Add Influence to Skin'+\
@@ -1513,24 +1537,137 @@ class WeightEditorWindow(qt.DockWindow):
         self.rem_unused_inf_but.clicked.connect(self.remove_unused_influences)
         sub_tool2_layout.addWidget(self.rem_unused_inf_but)
         
-        #ボタン軍の並びを一括設定
-        self.but_list.append(show_widget)
-        self.but_list.append(sel_joint_widget)
-        self.but_list.append(show_bad_widget)
-        self.but_list.append(icon_widget)
-        self.but_list.append(enforce_widget)
-        self.but_list.append(decimal_widget)
-        self.but_list.append(lock_widget)
-        self.but_list.append(mode_widget)
-        self.but_list.append(sub_tool0_widget)
-        self.but_list.append(sub_tool1_widget)
-        self.but_list.append(sub_tool2_widget)
+        self.but_list3.append(sub_tool0_widget)
+        self.but_list3.append(sub_tool1_widget)
+        self.but_list3.append(sub_tool2_widget)
         
-        self.set_column_stretch()#ボタン間隔が伸びないようにする
+        self.set_column_stretch(self.but_list3, self.unique_layout3)#ボタンの並び伸びないように固定
         #self.init_but_width_list(but_list=self.but_list)#配置実行
         
         self.main_layout.addWidget(qt.make_h_line())
+
+        #-------------------------------------------------------------------------------------------
+        #2個目のユニークレイアウト
+        self.unique_layout2 = QGridLayout()
+        self.unique_layout2.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        self.main_layout.addLayout(self.unique_layout2)
+        self.but_list2 = []
         
+        #計算モードボタンをはめる----------------------------------------------------------------------------------------------------------------------------------
+        #test_height = 24
+        mode_widget = QWidget()
+        #qt.change_widget_color(mode_widget, bgColor=[160])
+        mode_widget.setContentsMargins(-9, -7, -6 ,2)#マージン設定
+        mode_layout = QHBoxLayout()
+        mode_widget.setLayout(mode_layout)
+        mode_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        but_w = 38
+        norm_w =68
+        space = 12
+        length = but_w * 3 + norm_w * 2 + space 
+        mode_widget.setMinimumWidth(length)
+        mode_widget.setMaximumWidth(length)
+        mode_widget.setMaximumHeight(WIDGET_HEIGHT)
+        #mode_widget.setMaximumHeight(test_height)
+        
+        self.mode_but_group = QButtonGroup()
+        tip = lang.Lang(en='Values entered represent absolute values', ja=u'絶対値で再入力').output()
+        self.abs_but = qt.make_flat_btton(name='Abs', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
+        tip = lang.Lang(en='Values entered are added to exisiting values', ja=u'既存値への加算入力').output()
+        self.add_but = qt.make_flat_btton(name='Add', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
+        tip = lang.Lang(en='Values entered are percentages added to exisiting values', ja=u'既存値への率加算入力').output()
+        self.add_par_but = qt.make_flat_btton(name='Add%', bg=self.hilite, border_col=180, w_max=but_w+8, w_min=but_w+8, h_max=but_h, h_min=but_h, 
+                                                                flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
+        tip = lang.Lang(en='Normalize new weights\n\nRight-click forced normalization execution\n*If you execute without selecting a cell, it will be applied to all cells', 
+                                ja=u'新規ウェイトの正規化\n\n右クリックで強制正規化実行\n※セルを選択せずに実行すると全てのセルに適用されます').output()
+        self.norm_but = qt.make_flat_btton(name='Normalize', bg=self.hilite, border_col=180, w_max=norm_w, w_min=norm_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
+        tip = lang.Lang(en='Accept weight values ​​greater than 1.0 or 100 in total', ja=u'合計1.0もしくは100以上のウェイト値を許容する').output()
+        self.no_limit_but = qt.make_flat_btton(name='Unlimited', bg=self.hilite, border_col=180, w_max=norm_w, w_min=norm_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
+        self.norm_but.clicked.connect(self.toggle_no_limit_but_enable)
+        self.norm_but.rightClicked.connect(lambda : self.enforce_limit_and_normalize(force_norm=True))
+        self.no_limit_but.clicked.connect(self.keep_no_limit_flag)
+        self.mode_but_group.buttonClicked[int].connect(self.change_add_mode)
+        
+        self.norm_but.setChecked(self.norm)
+        self.no_limit_but.setChecked(self.no_limit)
+        self.toggle_no_limit_but_enable()
+        
+        self.mode_but_group.addButton(self.abs_but, 0)
+        self.mode_but_group.addButton(self.add_but, 1)
+        self.mode_but_group.addButton(self.add_par_but, 2)
+        if self.mode < 0:
+            self.mode = 0
+        self.mode_but_group.button(self.mode).setChecked(True)
+        mode_layout.addWidget(self.abs_but)
+        mode_layout.addWidget(self.add_but)
+        mode_layout.addWidget(self.add_par_but)
+        mode_layout.addWidget(self.norm_but)
+        mode_layout.addWidget(self.no_limit_but)
+        #self.main_layout.addWidget(mode_widget)
+        
+        #固定入力ボタン----------------------------------------------------------------------------------------------------------------------------------
+        static_input_widget = QWidget()
+        #qt.change_widget_color(static_input_widget, bgColor=[160])
+        static_input_widget.setContentsMargins(-9, -7, -7 ,2)#マージン設定
+        static_input_layout = QHBoxLayout()
+        static_input_widget.setLayout(static_input_layout)
+        static_input_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
+        but_w = 38
+        space = 10
+        length = but_w * 3 + norm_w * 2 + space 
+        static_input_widget.setMinimumWidth(length)
+        static_input_widget.setMaximumWidth(length)
+        static_input_widget.setMaximumHeight(WIDGET_HEIGHT)
+        #static_input_widget.setMaximumHeight(test_height)
+        
+        #固定値ボタン
+        tip = lang.Lang(en='', ja=u'').output()
+        self.n00_but = qt.make_flat_btton(name='0.0', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        static_input_layout.addWidget(self.n00_but)
+        self.n01_but = qt.make_flat_btton(name='0.1', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        static_input_layout.addWidget(self.n01_but)
+        tip = lang.Lang(en='', ja=u'').output()
+        self.n025_but = qt.make_flat_btton(name='0.25', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        static_input_layout.addWidget(self.n025_but)
+        self.n05_but = qt.make_flat_btton(name='0.5', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        static_input_layout.addWidget(self.n05_but)
+        self.n075_but = qt.make_flat_btton(name='0.75', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        static_input_layout.addWidget(self.n075_but)
+        tip = lang.Lang(en='', ja=u'').output()
+        self.n09_but = qt.make_flat_btton(name='0.9', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        static_input_layout.addWidget(self.n09_but)
+        self.n10_but = qt.make_flat_btton(name='1.0', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                            flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        static_input_layout.addWidget(self.n10_but)
+        
+        #文字替えのためにリストにしておく
+        self.static_input_buttons = [self.n00_but, self.n01_but, self.n025_but, self.n05_but, self.n075_but, self.n09_but, self.n10_but]
+        
+        self.n00_but.clicked.connect(lambda : self.apply_static_value(0.0))
+        self.n01_but.clicked.connect(lambda : self.apply_static_value(0.1))
+        self.n025_but.clicked.connect(lambda : self.apply_static_value(0.25))
+        self.n05_but.clicked.connect(lambda : self.apply_static_value(0.5))
+        self.n075_but.clicked.connect(lambda : self.apply_static_value(0.75))
+        self.n09_but.clicked.connect(lambda : self.apply_static_value(0.9))
+        self.n10_but.clicked.connect(lambda : self.apply_static_value(1.0))
+        
+        static_input_layout.addStretch(0)
+        self.but_list2.append(mode_widget)
+        self.but_list2.append(static_input_widget)
+        
+        self.set_column_stretch(self.but_list2, self.unique_layout2)#ボタン間隔が伸びないようにする
+        
+        self.main_layout.addWidget(qt.make_h_line())
         #---------------------------------------------------------------------------------------------------
                 
         #スライダー作成
@@ -1566,7 +1703,6 @@ class WeightEditorWindow(qt.DockWindow):
         sld_layout.addWidget(self.clear_search_but)
         
         self.main_layout.addWidget(qt.make_h_line())
-        
         #-------------------------------------------------------------------------------------------
         seach_layout = QHBoxLayout()
         self.main_layout.addLayout(seach_layout)
@@ -1605,7 +1741,8 @@ class WeightEditorWindow(qt.DockWindow):
         
         seach_layout.addWidget(QLabel(' '))
         
-        self.search_line = qt.LineEdit()
+        self.search_line = EditorLineEdit()
+        self.search_line.modifired.connect(self.change_static_text)
         self.search_line.editingFinished.connect(lambda : self.search_joint(as_interractive=False))
         self.search_line.textChanged.connect(lambda : self.search_joint(as_interractive=True))
         seach_layout.addWidget(self.search_line)
@@ -1710,6 +1847,17 @@ class WeightEditorWindow(qt.DockWindow):
         self.get_set_skin_weight()
         self.change_add_mode(id=self.mode)
         
+        self.installEventFilter(self)
+        
+        
+    def eventFilter(self, obj, event):
+        #shift と　ctrlでボタンの文字変える
+        if event.type() == QEvent.KeyPress:
+            self.change_static_text()
+        if event.type() == QEvent.KeyRelease:
+            self.change_static_text()
+        return False
+            
     #MayaUIにドッキングかのうかどうかを変更
     def change_dockable(self):
         if MAYA_VER <= 2016:
@@ -1839,10 +1987,12 @@ class WeightEditorWindow(qt.DockWindow):
         self.weight_model.copy_vertex_rows = self.copy_vtx_rows
         self.sel_model.clearSelection()
         self.refresh_table_view()
+        self.change_static_text()#右クリック時リフレッシュされない対策
         
     #頂点ウェイトのペースト
     def vertex_paste(self):
         if not self.copy_weights_list or not self.selected_items:
+            self.change_static_text()#右クリック時リフレッシュされない対策
             return
         self.update_rows = set()
         self.row_column_dict = defaultdict(lambda : [])
@@ -1913,6 +2063,7 @@ class WeightEditorWindow(qt.DockWindow):
             
         #ベイク計算に入る
         self.precalculate_bake_weights()
+        self.change_static_text()#右クリック時リフレッシュされない対策
                     
     #エクセルライクコピー
     copy_cell_list = []
@@ -1952,12 +2103,14 @@ class WeightEditorWindow(qt.DockWindow):
         self.cell_column_length = max_column - min_column + 1
         #print 'length :', self.cell_row_length, self.cell_column_length
         #print 'copied values :', self.copy_value_list
+        self.change_static_text()#右クリック時リフレッシュされない対策
         
     #エクセルライクペースト
     @timer
     def cell_paste(self):
         self.paste_cell_list = self.selected_items
         if not self.paste_cell_list or not self.copy_value_list:
+            self.change_static_text()#右クリック時リフレッシュされない対策
             return
         
         #繰り返し可能回数を判定
@@ -2001,6 +2154,7 @@ class WeightEditorWindow(qt.DockWindow):
                     pass
         #ベイク計算に入る
         self.precalculate_bake_weights()
+        self.change_static_text()#右クリック時リフレッシュされない対策
         
     #ペースト開始地点から次の開始地点までの無視セル一覧を作る
     def get_ignore_for_start_pos(self, row, column, row_length, column_length):
@@ -2052,20 +2206,20 @@ class WeightEditorWindow(qt.DockWindow):
     def open_smooth_setting_editor(self):
         smooth_setting_editor.Option()
         
-    def hammer_weight(self,  keep_zero=False):
+    def hammer_weight(self,  keep_zero=False, blend=False):
         #パラメータ決め打ちでスムースする
-        self.weight_smoothing(keep_zero=keep_zero)
+        self.weight_smoothing(keep_zero=keep_zero, blend=blend)
     
-    def smooth_weight(self,  keep_zero=False):
+    def smooth_weight(self,  keep_zero=False, blend=False):
         save_data = smooth_setting_editor.SubWindow.load_data()
         #print 'smooth setting :', save_data
         sw = save_data['weight_difference']
         swi = save_data['smoothing_iterations']
         omi = save_data['obey_max_inf']
-        self.weight_smoothing(keep_zero=keep_zero, sw=sw, swi=swi, omi=omi)
+        self.weight_smoothing(keep_zero=keep_zero, sw=sw, swi=swi, omi=omi, blend=blend)
         
     #ウェイトスムースの実行、後でちゃんとする(※1.3.8でちゃんとしました)
-    def weight_smoothing(self, keep_zero=False, sw=0, swi=5, omi=2, nrm=True):
+    def weight_smoothing(self, keep_zero=False, sw=0, swi=5, omi=2, nrm=True, blend=False):
         '''
         #スムースパラメータ
         sw = 0#weightChangeTolerance
@@ -2103,17 +2257,29 @@ class WeightEditorWindow(qt.DockWindow):
         self.get_set_skin_weight(node_vtx_dict=self.node_vtx_dict)
         
         #ゼロセルを維持する場合
-        if keep_zero:
+        if keep_zero or blend:
             self.get_set_skin_weight()
-            for row in self.update_rows:
-                weights = self._data[row]
-                org_weights = vertex_org_weight_dict[row] 
-                #print 'new weights :', weights
-                #print 'org weights :', org_weights
-                for i, ow in enumerate(org_weights):
-                    if ow == 0.0:
-                        #print 'keep zero', row, i
-                        weights[i] = 0.0
+            if keep_zero:
+                for row in self.update_rows:
+                    weights = self._data[row]
+                    org_weights = vertex_org_weight_dict[row] 
+                    #print 'new weights :', weights
+                    #print 'org weights :', org_weights
+                    for i, ow in enumerate(org_weights):
+                        if ow == 0.0:
+                            #print 'keep zero', row, i
+                            weights[i] = 0.0
+                            
+            #元のウェイト値との混ぜ率を適用する
+            if blend:
+                ratio = self.smooth_ratio_box.value() / 100.0
+                for row in self.update_rows:
+                    weights = self._data[row]
+                    org_weights = vertex_org_weight_dict[row] 
+                    for i, (ow, w) in enumerate(zip(org_weights, weights)):
+                        bw = ow * (1.0 - ratio) + w * ratio
+                        weights[i] = bw
+                        
             #ベイク計算に入る
             self.precalculate_bake_weights()
         else:
@@ -2279,6 +2445,7 @@ class WeightEditorWindow(qt.DockWindow):
             MAXIMUM_WEIGHT = 100.0
             self.max_wt = 100.0
         self.refresh_table_view()
+        self.change_static_text()
         
     @timer
     def change_limit(self, e):
@@ -2612,6 +2779,54 @@ class WeightEditorWindow(qt.DockWindow):
         #キー入力受付をもとに戻す
         self.view_widget.ignore_key_input = False
         
+    #モディファイヤによって固定値入力ボタンのテキスト表示を変える
+    static_input_list = [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0]
+    static_input_list_int = [0, 10, 25, 50, 75, 90, 100]
+    def change_static_text(self):
+        shift_mod = qt.check_key_modifiers(Qt.ShiftModifier)
+        ctrl_mod = qt.check_key_modifiers(Qt.ControlModifier)
+        
+        if MAXIMUM_WEIGHT == 100:
+            static_input_list  = self.static_input_list_int
+        else:
+            static_input_list  = self.static_input_list
+        
+        if shift_mod:
+            static_input_list = map(lambda  x : '+' + str(x), static_input_list)
+        elif ctrl_mod:
+            static_input_list = map(lambda  x : '-' + str(x), static_input_list)
+        else:
+            static_input_list = map(lambda  x :  str(x), static_input_list)
+            
+        for but, text in zip(self.static_input_buttons, static_input_list):
+            but.setText(text)
+            
+    #固定値を入力する
+    def apply_static_value(self, value):
+        pre_add_mode = self.add_mode#計算モード退避
+        global MAXIMUM_WEIGHT
+        pre_maximum = MAXIMUM_WEIGHT#桁数退避
+        MAXIMUM_WEIGHT = 1.0#一時的に桁数を1にする
+        
+        #shiftでAdd ctrl でSub それ以外はAbs
+        shift_mod = qt.check_key_modifiers(Qt.ShiftModifier)
+        ctrl_mod = qt.check_key_modifiers(Qt.ControlModifier)
+        
+        if shift_mod or ctrl_mod:
+            self.add_mode = 1
+        else:
+            self.add_mode = 0
+        
+        if ctrl_mod:
+            value *= -1
+        #print 'static_value :', value, self.add_mode
+        
+        self.input_box_value = value
+        self.calc_cell_value(from_spinbox=False, from_input_box=True)
+        
+        self.add_mode = pre_add_mode#計算モード元に戻す
+        MAXIMUM_WEIGHT = pre_maximum#桁数も戻す
+        
     #加算モードが変更されたらスライダー反映式を変える
     add_mode = 0
     def change_from_sld(self):
@@ -2673,11 +2888,11 @@ class WeightEditorWindow(qt.DockWindow):
         self.weight_input_sld.setValue(0)
             
     #ボタンが左詰めになるように調整
-    def set_column_stretch(self):
-        self.def_but_width_list = self.init_but_width_list(self.but_list)
+    def set_column_stretch(self, but_list, layout):
+        self.def_but_width_list = self.init_but_width_list(but_list)
         for i in range(self.def_but_width_list[-1]):
-            self.unique_layout.setColumnStretch(i, 0)
-        self.unique_layout.setColumnStretch(i+1, 1)
+            layout.setColumnStretch(i, 0)
+        layout.setColumnStretch(i + 1, 1)
         
     def init_but_width_list(self, but_list):
         but_width_list = [0]
@@ -2691,23 +2906,13 @@ class WeightEditorWindow(qt.DockWindow):
         if self.init_flag:
             return
         win_x = event.size().width()
-        self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list, loop=0)
-        
-    check_window_dict = defaultdict(lambda: -1)
-    def check_window_size(self, win_x, but_width_list):
-        self.def_but_width_list
-        for i, but_width in enumerate(self.def_but_width_list[::-1][:-1]):
-            if win_x > but_width+40:#ウィンドウの幅がボタン幅より広かったら配置して次の再帰へ
-                self.window_size_id = i
-                break
-        if self.window_size_id == self.check_window_dict[str(but_width_list)]:
-            #print 'same id return', self.window_size_id, str(but_width_list)
-            return False
-        self.check_window_dict[str(but_width_list)] = self.window_size_id
-        return True
+        self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list, loop=0, layout=self.unique_layout)
+        self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list3, loop=0, layout=self.unique_layout3)
+        self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list2, loop=0, layout=self.unique_layout2)
+       
         
     pre_row_count = 0
-    def re_arrangement_but(self, win_x, grid_v, but_list, loop):
+    def re_arrangement_but(self, win_x, grid_v, but_list, loop, layout):
         #print ' re_arrangement_but :'
         if loop >100:
             return
@@ -2722,11 +2927,11 @@ class WeightEditorWindow(qt.DockWindow):
                 else:
                     set_but_list = but_list[:]
                 for j, but in enumerate(set_but_list):
-                    self.unique_layout.addWidget(but, grid_v, but_width_list[j], 1, but.width())
+                    layout.addWidget(but, grid_v, but_width_list[j], 1, but.width())
                 break
         but_num = len(but_list)-i
         new_but_list = but_list[but_num:]
-        self.re_arrangement_but(win_x=win_x, grid_v=grid_v+1, but_list=new_but_list, loop=loop+1)
+        self.re_arrangement_but(win_x=win_x, grid_v=grid_v+1, but_list=new_but_list, loop=loop+1, layout=layout)
         
     #UIに選択コンポーネントのバーテックスカラーを反映
     weight_list = []
@@ -3019,18 +3224,20 @@ class WeightEditorWindow(qt.DockWindow):
             del self.weight_model._data
             self.weight_model._data = {}
         except Exception as e:
-            print e.message, 'in get set' 
+            pass
+            #print e.message, 'in get set' 
         try:#都度メモリをきれいに
             self.weight_model.deleteLater()
             del self.weight_model
         except Exception as e:
-            print e.message, 'in get set'
             pass
+            #print e.message, 'in get set' 
         try:
             self.sel_model.deleteLater()
             del self.sel_model
         except Exception as e:
-            print e.message, 'in get set'
+            pass
+            #print e.message, 'in get set' 
         try:
             self.weight_model = TableModel(self._data, self.view_widget, self.mesh_rows, 
                                             self.all_influences, self.v_header_list, self.inf_color_list)
@@ -3869,7 +4076,7 @@ class WeightEditorWindow(qt.DockWindow):
     closed_flag = False
     save_flag = True
     def closeEvent(self, e):
-        print 'window closed :'
+        #print 'window closed :'
         self.disable_joint_override()
         self.erase_func_data()
         self.closed_flag=True
@@ -3879,7 +4086,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.deleteLater()
         
     def dockCloseEventTriggered(self):
-        print 'dock_close_event :'
+        #print 'dock_close_event :'
         self.closeEvent(None)
         
     #メモリ解放しっかり
@@ -3890,22 +4097,26 @@ class WeightEditorWindow(qt.DockWindow):
             del self.weight_model._data#一番でかいっぽい
             self.weight_model._data = {}
         except Exception as e:
-            print e.message, 'in close'
+            #print e.message, 'in close'
+            pass
         try:
             self.weight_model.deleteLater()
             del self.weight_model
         except Exception as e:
-            print e.message, 'in close'
+            #print e.message, 'in close'
+            pass
         try:
             self.sel_model.deleteLater()
             del self.sel_model
         except Exception as e:
-            print e.message, 'in close'
+            #print e.message, 'in close'
+            pass
         try:
             self.view_widget.deleteLater()
             del self.view_widget
         except Exception as e:
-            print e.message, 'in close'
+            #print e.message, 'in close'
+            pass
         
         try:
             del self._data
@@ -3935,8 +4146,9 @@ class WeightEditorWindow(qt.DockWindow):
             del self.vtx_weight_dict
             del self.lock_data_dict
         except Exception as e:
-            print e.message, 'in close'
-        print 'erase func data :'
+            #print e.message, 'in close'
+            pass
+        #print 'erase func data :'
             
         
 #アンドゥ時に辞書を更新しておく。
@@ -4009,7 +4221,7 @@ def make_ui():
     return ui
    
 def Option(x=None, y=None):
-    print 'si weight editor : Option'
+    #print 'si weight editor : Option'
     global WINDOW
     try:
         WINDOW.close()
