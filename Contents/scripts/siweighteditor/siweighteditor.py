@@ -1070,39 +1070,6 @@ class WeightEditorWindow(qt.DockWindow):
         enforce_layout.addWidget(self.round_but)
         enforce_layout.addWidget(self.round_box)
         
-        #Weightロックボタン------------------------------------------------------------------------------------------------------
-        lock_widget = QWidget()
-        #qt.change_widget_color(lock_widget, bgColor=[255])
-        lock_widget.setContentsMargins(-9, -7, 0 ,2)#マージン設定
-        lock_layout = QHBoxLayout()
-        lock_layout.setSpacing(0)
-        lock_widget.setLayout(lock_layout)
-        but_w = 73
-        space = 6
-        lock_widget.setMinimumWidth(but_w*3+space)
-        lock_widget.setMaximumWidth(but_w*3+space)
-        lock_widget.setMaximumHeight(WIDGET_HEIGHT)
-        tip = lang.Lang(en='Lock selected weights\nRight click to lock influence of all vertices', 
-                                ja=u'選択ウェイトのロック\n右クリックで全頂点のインフルエンスロック').output()
-        self.weight_lock_but = qt.make_flat_btton(name='Lock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
-                                                                flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Unlock selected weights\nRight click to unlock influence of all vertices',  
-                                ja=u'選択ウェイトのロック解除\n右クリックで全頂点のインフルエンスアンロック').output()
-        self.weight_unlock_but = qt.make_flat_btton(name='Unlock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
-                                                                flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
-        tip = lang.Lang(en='Unlock selected weights',  
-                                ja=u'すべてのウェイトロックの解除').output()
-        self.weight_lock_clear_but = qt.make_flat_btton(name='Clear locks', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
-                                                                flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
-        self.weight_lock_but.clicked.connect(self.lock_weight)
-        self.weight_lock_but.rightClicked.connect(self.lock_all_rows)
-        self.weight_unlock_but.clicked.connect(self.unlock_weight)
-        self.weight_unlock_but.rightClicked.connect(lambda : self.lock_all_rows(lock=False))
-        self.weight_lock_clear_but.clicked.connect(self.clear_lock_weight)
-        lock_layout.addWidget(self.weight_lock_but)
-        lock_layout.addWidget(self.weight_unlock_but)
-        lock_layout.addWidget(self.weight_lock_clear_but)
-        
         #-----------------------------------------------------------------------------------------------------------------------------------
         #ジョイント選択ツールタイプ
         sel_joint_widget = QWidget()
@@ -1160,7 +1127,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.but_list.append(icon_widget)
         self.but_list.append(enforce_widget)
         #self.but_list.append(decimal_widget)
-        self.but_list.append(lock_widget)
+        #self.but_list.append(lock_widget)
         #self.but_list.append(mode_widget)
         self.set_column_stretch(self.but_list, self.unique_layout)#ボタンの並び伸びないように固定
         
@@ -1560,8 +1527,8 @@ class WeightEditorWindow(qt.DockWindow):
         mode_layout = QHBoxLayout()
         mode_widget.setLayout(mode_layout)
         mode_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
-        but_w = 38
-        norm_w =68
+        but_w = 32
+        norm_w =66
         space = 16
         length = but_w * 3 + norm_w * 2 + space 
         mode_widget.setMinimumWidth(length)
@@ -1615,8 +1582,8 @@ class WeightEditorWindow(qt.DockWindow):
         static_input_layout = QHBoxLayout()
         static_input_widget.setLayout(static_input_layout)
         static_input_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
-        but_w = 38
-        space = 14
+        but_w = 34
+        space = -1
         length = but_w * 3 + norm_w * 2 + space 
         static_input_widget.setMinimumWidth(length)
         static_input_widget.setMaximumWidth(length)
@@ -1660,6 +1627,41 @@ class WeightEditorWindow(qt.DockWindow):
         self.n10_but.clicked.connect(lambda : self.apply_static_value(1.0))
         
         static_input_layout.addStretch(0)
+        
+        #Weightロックボタン------------------------------------------------------------------------------------------------------
+        lock_widget = QWidget()
+        #qt.change_widget_color(lock_widget, bgColor=[255])
+        lock_widget.setContentsMargins(-9, -7, 0 ,2)#マージン設定
+        lock_layout = QHBoxLayout()
+        lock_layout.setSpacing(0)
+        lock_widget.setLayout(lock_layout)
+        but_w = 70
+        space = 6
+        lock_widget.setMinimumWidth(but_w*3+space)
+        lock_widget.setMaximumWidth(but_w*3+space)
+        lock_widget.setMaximumHeight(WIDGET_HEIGHT)
+        tip = lang.Lang(en='Lock selected weights\nRight click to lock influence of all vertices', 
+                                ja=u'選択ウェイトのロック\n右クリックで全頂点のインフルエンスロック').output()
+        self.weight_lock_but = qt.make_flat_btton(name='Lock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                                flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        tip = lang.Lang(en='Unlock selected weights\nRight click to unlock influence of all vertices',  
+                                ja=u'選択ウェイトのロック解除\n右クリックで全頂点のインフルエンスアンロック').output()
+        self.weight_unlock_but = qt.make_flat_btton(name='Unlock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                                flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        tip = lang.Lang(en='Unlock selected weights',  
+                                ja=u'すべてのウェイトロックの解除').output()
+        self.weight_lock_clear_but = qt.make_flat_btton(name='Clear locks', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
+                                                                flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
+        self.weight_lock_but.clicked.connect(self.lock_weight)
+        self.weight_lock_but.rightClicked.connect(self.lock_all_rows)
+        self.weight_unlock_but.clicked.connect(self.unlock_weight)
+        self.weight_unlock_but.rightClicked.connect(lambda : self.lock_all_rows(lock=False))
+        self.weight_lock_clear_but.clicked.connect(self.clear_lock_weight)
+        lock_layout.addWidget(self.weight_lock_but)
+        lock_layout.addWidget(self.weight_unlock_but)
+        lock_layout.addWidget(self.weight_lock_clear_but)
+        
+        self.but_list2.append(lock_widget)
         self.but_list2.append(mode_widget)
         self.but_list2.append(static_input_widget)
         
@@ -3391,13 +3393,15 @@ class WeightEditorWindow(qt.DockWindow):
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
         
     #ハイライトボタン押された時に選択反映するスロット
-    def reset_hilite(self):
-        if not self.highlite_but.isChecked():
+    def reset_hilite(self, force_reset=False):
+        cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
+        if not self.highlite_but.isChecked() or force_reset:
             self.hilite_flag = True
             cmds.select(cl=True)
             cmds.select(self.original_selection, r=True)
         else:
             self.cell_changed(self.selected_items, None)
+        cmds.undoInfo(swf=True)#ヒストリを再度有効
             
     def store_infulence_override_color(self):
         self.joint_override_dict = {}
@@ -4181,6 +4185,7 @@ def reverse_dict(node_weight_dict, node_id_dict):
 #アンドゥの時に読み直す
 def refresh_window():
     global WINDOW
+    WINDOW.reset_hilite(force_reset=True)#ハイライトをクリア
     WINDOW.get_set_skin_weight(undo=True)
     WINDOW.weight_input.setValue(0.0)#値を設定
         
