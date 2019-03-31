@@ -400,6 +400,7 @@ def set_header_width(widget, index=None, space=0, min=200):
 #Shift,Ctrlなどのモディファイヤが押されてるかどうかを判定する関数            
 def check_key_modifiers(modifire):
     mods = QApplication.keyboardModifiers()
+    print mods
     isPressed =  mods & modifire
     return bool(isPressed)
     

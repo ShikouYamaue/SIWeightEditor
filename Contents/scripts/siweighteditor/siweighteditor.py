@@ -856,15 +856,15 @@ class WeightEditorWindow(qt.DockWindow):
         self.yellow = [150,125,20]
         but_h = BUTTON_HEIGHT
         
-        #表示ボタンをはめる
+        #表示ボタンをはめる-----------------------------------------------------------------------------------------------------------
         show_widget = QWidget()
         #qt.change_widget_color(show_widget, bgColor=[160])
-        show_widget.setContentsMargins(-9, -7, -2 ,2)#マージン設定
+        show_widget.setContentsMargins(-9, -7, 2 ,2)#マージン設定
         show_layout = QHBoxLayout()
         show_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         show_widget.setLayout(show_layout)
         but_w = 60
-        space = -4
+        space = 0
         show_widget.setMinimumWidth(but_w*5+space)
         show_widget.setMaximumWidth(but_w*5+space)
         show_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -901,12 +901,12 @@ class WeightEditorWindow(qt.DockWindow):
         #不具合行にフォーカスするボタン------------------------------------------------------------------------
         show_bad_widget = QWidget()
         #qt.change_widget_color(show_bad_widget, bgColor=[255])
-        show_bad_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
+        show_bad_widget.setContentsMargins(-9, -7, 0 ,2)#マージン設定
         show_bad_layout = QHBoxLayout()
         show_bad_layout.setSpacing(0)
         show_bad_widget.setLayout(show_bad_layout)
         but_w = 70
-        space = 1
+        space = 5
         show_bad_widget.setMinimumWidth(but_w*4+space)
         show_bad_widget.setMaximumWidth(but_w*4+space)
         show_bad_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -931,15 +931,15 @@ class WeightEditorWindow(qt.DockWindow):
         show_bad_layout.addWidget(self.over_wt_but)
         show_bad_layout.addWidget(self.over_inf_but)
         
-        #アイコンボタン群
+        #アイコンボタン群-----------------------------------------------------------------------------------------------------------
         icon_widget = QWidget()
         #qt.change_widget_color(icon_widget, bgColor=[255])
-        icon_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
+        icon_widget.setContentsMargins(-9, -7, 0 ,2)#マージン設定
         icon_layout = QHBoxLayout()
         icon_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         icon_widget.setLayout(icon_layout)
         but_w = BUTTON_HEIGHT#常に正方形になるように高さと合わせる
-        space = -4
+        space = 0
         wid_a = but_w*4+space
         tip = lang.Lang(en='Lock display mesh', ja=u'表示メッシュのロック').output()
         self.lock_but = qt.make_flat_btton(name='', bg=self.lock_col, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
@@ -991,17 +991,16 @@ class WeightEditorWindow(qt.DockWindow):
         icon_layout.addWidget(self.w1_but)
         icon_layout.addWidget(self.w100_but)
         
-        
-        #enforce_limitを設定する
+        #enforce_limitを設定する-----------------------------------------------------------------------------------------------------------
         enforce_widget = QWidget()
         #qt.change_widget_color(enforce_widget, bgColor=[255])
-        enforce_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
+        enforce_widget.setContentsMargins(-9, -7, 0 ,2)#マージン設定
         enforce_layout = QHBoxLayout()
         enforce_layout.setSpacing(4)
         enforce_widget.setLayout(enforce_layout)
         but_w = 84
         spin_w = 24
-        space = 2
+        space = 6
         enforce_widget.setMinimumWidth(but_w*3+spin_w*3+space)
         enforce_widget.setMaximumWidth(but_w*3+spin_w*3+space)
         enforce_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1074,12 +1073,12 @@ class WeightEditorWindow(qt.DockWindow):
         #Weightロックボタン------------------------------------------------------------------------------------------------------
         lock_widget = QWidget()
         #qt.change_widget_color(lock_widget, bgColor=[255])
-        lock_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
+        lock_widget.setContentsMargins(-9, -7, 0 ,2)#マージン設定
         lock_layout = QHBoxLayout()
         lock_layout.setSpacing(0)
         lock_widget.setLayout(lock_layout)
         but_w = 73
-        space = 2
+        space = 6
         lock_widget.setMinimumWidth(but_w*3+space)
         lock_widget.setMaximumWidth(but_w*3+space)
         lock_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1108,14 +1107,14 @@ class WeightEditorWindow(qt.DockWindow):
         #ジョイント選択ツールタイプ
         sel_joint_widget = QWidget()
         #qt.change_widget_color(sel_joint_widget, bgColor=[255])
-        sel_joint_widget.setContentsMargins(-9, -7, -10 ,2)#マージン設定
+        sel_joint_widget.setContentsMargins(-9, -7, -6 ,2)#マージン設定
         sel_joint_widget.setGeometry(QRect(0, 0, 0 ,0))
         sel_joint_layout = QHBoxLayout()
         sel_joint_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sel_joint_widget.setLayout(sel_joint_layout)
         but_w = 22
         j_hl_w = 75
-        space = 4
+        space = 8
         sel_joint_widget.setMinimumWidth(but_w*4+j_hl_w+space)
         sel_joint_widget.setMaximumWidth(but_w*4+j_hl_w+space)
         sel_joint_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1176,12 +1175,12 @@ class WeightEditorWindow(qt.DockWindow):
         #サブツール群を配置
         sub_tool0_widget = QWidget()
         #qt.change_widget_color(sub_tool0_widget, bgColor=[255])
-        sub_tool0_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
+        sub_tool0_widget.setContentsMargins(-9, -7,  0 ,2)#マージン設定
         sub_tool0_widget.setGeometry(QRect(0, 0, 0 ,0))
         sub_tool0_layout = QHBoxLayout()
         sub_tool0_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool0_widget.setLayout(sub_tool0_layout)
-        size =206
+        size =210
         sub_tool0_widget.setMinimumWidth(size)
         sub_tool0_widget.setMaximumWidth(size)
         sub_tool0_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1194,7 +1193,7 @@ class WeightEditorWindow(qt.DockWindow):
         tip = lang.Lang(
                             en='*Weight Hummer\n\n' +\
                             'Execute a weight hammer at the vertex of the selected cell\n'+\
-                            '*Right-click Run with the application rate of smooth', 
+                            'Right-click Run with the application rate of smooth', 
                             ja=u'・ウェイトハンマー\n\n' +\
                             u'選択セルの頂点にウェイトハンマーを実行する\n' +\
                             u'右クリック スムースの適用率を指定して実行'
@@ -1209,7 +1208,7 @@ class WeightEditorWindow(qt.DockWindow):
         tip = lang.Lang(
                             en='*Weight Hummer\n\nExecute a weight hammer at the vertex of the selected cell\n'+\
                             '*Hold weight value 0.0\n' +\
-                            '*Right-click Run with the application rate of smooth', 
+                            'Right-click Run with the application rate of smooth', 
                             ja=u'・ウェイトハンマー\n\n選択セルの頂点にウェイトハンマーを実行する\n' +\
                             u'※ウェイト値0.0を維持する\n' +\
                             u'右クリック スムースの適用率を指定して実行'
@@ -1252,8 +1251,8 @@ class WeightEditorWindow(qt.DockWindow):
         sub_tool0_layout.addWidget(self.smooth_ratio_but)
         sub_tool0_layout.addWidget(QLabel(' '))
         
-        tip = lang.Lang(en='*Specify application rate of smooth and weight hammers \ nSmooth and hammers are applied by right click', 
-                                ja=u'・スムース、ウェイトハンマーの適用率を指定\nスムース、ハンマーを右クリック実行で適用されます').output()
+        tip = lang.Lang(en='*Specify application rate of smooth and weight hammers(%) \nSmooth and hammers are applied by right click', 
+                                ja=u'・スムース、ウェイトハンマーの適用率を%指定\nスムース、ハンマーを右クリック実行で適用されます').output()
         self.smooth_ratio_box = EditorSpinbox()
         self.smooth_ratio_box.setButtonSymbols(QAbstractSpinBox.NoButtons)
         self.smooth_ratio_box.setRange(0, 100)
@@ -1286,18 +1285,18 @@ class WeightEditorWindow(qt.DockWindow):
         self.freeze_m_but.clicked.connect(qt.Callback(self.freeze_m))
         sub_tool0_layout.addWidget(self.freeze_m_but)
        
-        #サブツール群を配置
+        #サブツール群を配置-------------------------------------------------------------------------------------------------------------------------------
         sub_tool1_widget = QWidget()
         #qt.change_widget_color(sub_tool1_widget, bgColor=[255])
-        sub_tool1_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
+        sub_tool1_widget.setContentsMargins(-9, -7, 0 ,2)#マージン設定
         sub_tool1_widget.setGeometry(QRect(0, 0, 0 ,0))
         sub_tool1_layout = QHBoxLayout()
         sub_tool1_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool1_widget.setLayout(sub_tool1_layout)
         if MAYA_VER >= 2016:
-            size = 212 + 40
+            size = 212 + 44
         else:
-            size = 190 + 40
+            size = 190 + 44
         sub_tool1_widget.setMinimumWidth(size)
         sub_tool1_widget.setMaximumWidth(size)
         sub_tool1_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1400,12 +1399,12 @@ class WeightEditorWindow(qt.DockWindow):
         #サブツール群を配置
         sub_tool2_widget = QWidget()
         #qt.change_widget_color(sub_tool2_widget, bgColor=[255])
-        sub_tool2_widget.setContentsMargins(-9, -7, -4 ,2)#マージン設定
+        sub_tool2_widget.setContentsMargins(-9, -7, 0 ,2)#マージン設定
         sub_tool2_widget.setGeometry(QRect(0, 0, 0 ,0))
         sub_tool2_layout = QHBoxLayout()
         sub_tool2_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         sub_tool2_widget.setLayout(sub_tool2_layout)
-        size = 226
+        size = 230
         sub_tool2_widget.setMinimumWidth(size)
         sub_tool2_widget.setMaximumWidth(size)
         sub_tool2_widget.setMaximumHeight(WIDGET_HEIGHT)
@@ -1557,13 +1556,13 @@ class WeightEditorWindow(qt.DockWindow):
         #test_height = 24
         mode_widget = QWidget()
         #qt.change_widget_color(mode_widget, bgColor=[160])
-        mode_widget.setContentsMargins(-9, -7, -6 ,2)#マージン設定
+        mode_widget.setContentsMargins(-9, -7, -2 ,2)#マージン設定
         mode_layout = QHBoxLayout()
         mode_widget.setLayout(mode_layout)
         mode_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         but_w = 38
         norm_w =68
-        space = 12
+        space = 16
         length = but_w * 3 + norm_w * 2 + space 
         mode_widget.setMinimumWidth(length)
         mode_widget.setMaximumWidth(length)
@@ -1612,12 +1611,12 @@ class WeightEditorWindow(qt.DockWindow):
         #固定入力ボタン----------------------------------------------------------------------------------------------------------------------------------
         static_input_widget = QWidget()
         #qt.change_widget_color(static_input_widget, bgColor=[160])
-        static_input_widget.setContentsMargins(-9, -7, -7 ,2)#マージン設定
+        static_input_widget.setContentsMargins(-9, -7, -3 ,2)#マージン設定
         static_input_layout = QHBoxLayout()
         static_input_widget.setLayout(static_input_layout)
         static_input_layout.setSpacing(0)#ウェジェットどうしの間隔を設定する
         but_w = 38
-        space = 10
+        space = 14
         length = but_w * 3 + norm_w * 2 + space 
         static_input_widget.setMinimumWidth(length)
         static_input_widget.setMaximumWidth(length)
@@ -1625,14 +1624,14 @@ class WeightEditorWindow(qt.DockWindow):
         #static_input_widget.setMaximumHeight(test_height)
         
         #固定値ボタン
-        tip = lang.Lang(en='', ja=u'').output()
+        tip = lang.Lang(en='Fixed value input \n Left click -> absolute value input \n Shift + left click -> addition \n Ctrl + left click -> subtraction', 
+                                    ja=u'・固定数値入力 \n左クリックで絶対値入力\nShift + 左クリックで加算\nCtrl + 左クリックで減算').output()
         self.n00_but = qt.make_flat_btton(name='0.0', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                             flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         static_input_layout.addWidget(self.n00_but)
         self.n01_but = qt.make_flat_btton(name='0.1', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                             flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         static_input_layout.addWidget(self.n01_but)
-        tip = lang.Lang(en='', ja=u'').output()
         self.n025_but = qt.make_flat_btton(name='0.25', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                             flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         static_input_layout.addWidget(self.n025_but)
@@ -1642,7 +1641,6 @@ class WeightEditorWindow(qt.DockWindow):
         self.n075_but = qt.make_flat_btton(name='0.75', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                             flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         static_input_layout.addWidget(self.n075_but)
-        tip = lang.Lang(en='', ja=u'').output()
         self.n09_but = qt.make_flat_btton(name='0.9', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                             flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
         static_input_layout.addWidget(self.n09_but)
@@ -1849,13 +1847,25 @@ class WeightEditorWindow(qt.DockWindow):
         
         self.installEventFilter(self)
         
-        
+    #PySide2以降でモディファイアの状態を正しく取得できないので自前フラグ管理
+    shift_isPressed = False
+    ctrl_isPressed = False
     def eventFilter(self, obj, event):
+        shift_num = 16777248
+        ctrl_num = 16777249
         #shift と　ctrlでボタンの文字変える
         if event.type() == QEvent.KeyPress:
-            self.change_static_text()
+            if event.key() == shift_num:
+                self.shift_isPressed = True
+            if event.key() == ctrl_num:
+                self.ctrl_isPressed = True
+            self.change_static_text(reserve_mod=True)
         if event.type() == QEvent.KeyRelease:
-            self.change_static_text()
+            if event.key() == shift_num:
+                self.shift_isPressed = False
+            if event.key() == ctrl_num:
+                self.ctrl_isPressed = False
+            self.change_static_text(reserve_mod=True)
         return False
             
     #MayaUIにドッキングかのうかどうかを変更
@@ -2782,9 +2792,13 @@ class WeightEditorWindow(qt.DockWindow):
     #モディファイヤによって固定値入力ボタンのテキスト表示を変える
     static_input_list = [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0]
     static_input_list_int = [0, 10, 25, 50, 75, 90, 100]
-    def change_static_text(self):
-        shift_mod = qt.check_key_modifiers(Qt.ShiftModifier)
-        ctrl_mod = qt.check_key_modifiers(Qt.ControlModifier)
+    def change_static_text(self, reserve_mod=False):
+        if reserve_mod:
+            shift_mod = self.shift_isPressed
+            ctrl_mod = self.ctrl_isPressed
+        else:
+            shift_mod = qt.check_key_modifiers(Qt.ShiftModifier)
+            ctrl_mod = qt.check_key_modifiers(Qt.ControlModifier)
         
         if MAXIMUM_WEIGHT == 100:
             static_input_list  = self.static_input_list_int
@@ -2800,7 +2814,7 @@ class WeightEditorWindow(qt.DockWindow):
             
         for but, text in zip(self.static_input_buttons, static_input_list):
             but.setText(text)
-            
+    
     #固定値を入力する
     def apply_static_value(self, value):
         pre_add_mode = self.add_mode#計算モード退避
@@ -4026,6 +4040,7 @@ class WeightEditorWindow(qt.DockWindow):
         #フォーカス移してテーブルの状態を更新する
         self.view_widget.setFocus()
         self.view_widget.clearFocus()
+        self.view_widget.setFocus()
         #self.setFocus()
         #self.clearFocus()
         #縦ヘッダーを取得
