@@ -55,7 +55,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.3.9'
+VERSION = 'r1.4.0'
 
 TITLE = "SIWeightEditor"
     
@@ -801,10 +801,11 @@ class WeightEditorWindow(qt.DockWindow):
         save_data['floating'] = self.isFloating()
         save_data['area'] = self.dockArea()
         save_data['smooth_parcent'] = self.smooth_ratio_box.value()
-        if not os.path.exists(self.dir_path):
-            os.makedirs(self.dir_path)
         with open(self.w_file, 'w') as f:
             json.dump(save_data, f)
+            
+    #def moveEvent(self, e):
+        #print 'window_move :' , e
         
     pre_selection_node = []
     def __init__(self, parent = None, init_pos=False):
@@ -1890,7 +1891,7 @@ class WeightEditorWindow(qt.DockWindow):
                 self.save_window_data()
                 self.show(dockable=True,
                                 area=None,
-                                floating=True ,
+                                floating=False,
                                 width=self.width(),
                                 height=self.height())
             else:
@@ -3629,7 +3630,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.locked_cells = self.weight_model.weight_lock_cells#ロック情報を取得
         
         #0-1表示なら割り算省略、ちょっとは早くなる？？
-        if MAXIMUM_WEIGHT == 100.0:
+        if MAXIMUM_WEIGHT == 100.0 or self.add_mode == 2:
             if not from_input_box:
                 new_value = self.weight_input.value()/100
             else:
@@ -4101,6 +4102,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.closed_flag=True
         self.remove_job()
         if self.save_flag:
+            #print 'save data :'
             self.save_window_data()
         self.deleteLater()
         
@@ -4244,6 +4246,8 @@ def Option(x=None, y=None):
     #print 'si weight editor : Option'
     global WINDOW
     try:
+        WINDOW.dockCloseEventTriggered()
+        WINDOW.save_flag=False
         WINDOW.close()
     except:
         pass
@@ -4254,6 +4258,7 @@ def Option(x=None, y=None):
     window = make_ui()
     save_data = window.load_window_data(init_pos=False)
     
+        
     #不要なワークスペースコントロールセットを削除
     try:
         cmds.deleteUI(TITLE+'WorkspaceControl')
