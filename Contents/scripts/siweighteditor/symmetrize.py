@@ -162,8 +162,10 @@ class WeightSymmetrize():
         vertices = cmds.filterExpand(vertices, sm=31)
         meshes = cmds.filterExpand(self.selection, sm=12)
         #メッシュからジョイントラベルを設定
-        cmds.selectMode(o=True)
-        self.all_meshes = cmds.ls(sl=True)
+        if vertices:
+            self.all_meshes = list(set(x.split(".", 1)[0] for x in vertices))
+        else:
+            self.all_meshes = meshes
         if not self.all_meshes:
             return
         #スキンクラスタからジョイントラベルを設定する
@@ -217,9 +219,6 @@ class WeightSymmetrize():
                 self.ezSymWeight(target=self.vtx_R_All+vtx_L, mirror=True)#右から左へ転送
             
             #選択状態を元通りにする
-            cmds.select(self.all_meshes, r=True)
-            cmds.selectMode(component =True)
-            cmds.selectType( pe=False, pv=True, pf=False)
             cmds.select(self.selection, r=True)
         
     #ウェイトミラー
