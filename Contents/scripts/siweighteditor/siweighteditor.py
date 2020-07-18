@@ -55,7 +55,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.4.0'
+VERSION = 'r1.4.1'
 
 TITLE = "SIWeightEditor"
     
@@ -1884,16 +1884,12 @@ class WeightEditorWindow(qt.DockWindow):
                     OptionWindow(offset=True)
         else:
             if self.docking_but.isChecked():
-                try:
-                    cmds.deleteUI(TITLE+'WorkspaceControl')
-                except:
-                    pass
                 self.save_window_data()
                 self.show(dockable=True,
-                                area=None,
-                                floating=False,
-                                width=self.width(),
-                                height=self.height())
+                        area=None,
+                        floating=False,
+                        width=self.width(),
+                        height=self.height())
             else:
                 self.save_window_data()
                 Option()
@@ -4262,10 +4258,12 @@ def Option(x=None, y=None):
     #不要なワークスペースコントロールセットを削除
     try:
         cmds.deleteUI(TITLE+'WorkspaceControl')
-    except:
+    except Exception as e:
+        #print 'delete ui failed :', e.message
         pass
         
     if not save_data['dockable']:
+        #print 'not dockabel'
         window.save_flag=False
         window.close()
         OptionWindow()
