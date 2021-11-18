@@ -22,7 +22,7 @@ import os
 import locale
 import json
 import webbrowser
-import importlib
+from imp import reload
 
 from . import common
 from . import lang
@@ -36,8 +36,8 @@ from . import joint_rule_editor
 from . import go
 from . import prof
 from . import smooth_setting_editor
-importlib.reload(smooth_setting_editor)
-importlib.reload(prof)
+reload(smooth_setting_editor)
+reload(prof)
 
 import imp
 try:
