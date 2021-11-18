@@ -1408,9 +1408,9 @@ class WeightEditorWindow(qt.DockWindow):
         sub_tool2_layout.addWidget(self.auto_symmetry_but)
         
         #メッシュマージ
-        tip = lang.Lang(en='*Mesh Marge with Skinning\n\n'+\
-                            'Conbine the selected mesh with keeping skinning\n'+\
-                            'With standard functions, data can not be broken or can not be undone , so original implementation\n\n'+\
+        tip = lang.Lang(en='*Merge Mesh with Skinning\n\n'+\
+                            'Combine the selected mesh while keeping the skinning\n'+\
+                            'With standard functions, data can not be broken or can not be undone, so original implementation\n\n'+\
                             'It is convenient to merge after Auto Symmetry', 
                             ja=u'・Mesh Marge with Skinning\n\n'+\
                             u'選択メッシュをスキニングを保持したまま結合します\n'+\

@@ -22,7 +22,7 @@ class Option():
             WINDOW.closeEvent(None)
             WINDOW.close()
         except Exception as e:
-            print(e.message)
+            print(e)
         WINDOW = SubWindow()
         #WINDOW.init_flag=False
         WINDOW.resize(800, 500)
