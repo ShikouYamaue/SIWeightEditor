@@ -22,7 +22,7 @@ class Option():
             WINDOW.closeEvent(None)
             WINDOW.close()
         except Exception as e:
-            #print e.message
+            #print(e.message)
             pass
         WINDOW = SubWindow()
         WINDOW.resize(300, 150)
@@ -112,7 +112,7 @@ class SubWindow(qt.SubWindow):
                 with open(self.save_file, 'r') as f:
                     save_data = json.load(f)
             except Exception as e:
-                print e.message
+                print(e.message)
                 save_data = self.save_default()
         else:
             save_data = self.save_default()
@@ -131,7 +131,7 @@ class SubWindow(qt.SubWindow):
         return save_data
             
     def save_data(self):
-        #print 'save smooth setting :'
+        #print('save smooth setting :')
         if not os.path.exists(self.dir_path):
             os.makedirs(self.dir_path)
         save_data = {}

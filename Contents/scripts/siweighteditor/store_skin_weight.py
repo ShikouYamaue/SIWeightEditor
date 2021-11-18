@@ -28,7 +28,7 @@ class StoreSkinWeight():
         while not iter.isDone():
             loop += 1
             if loop >= 10000:
-                print 'too many loop :'
+                print('too many loop :')
                 return []
                 
             meshDag = om.MDagPath()
@@ -36,7 +36,7 @@ class StoreSkinWeight():
             
             try:
                 iter.getDagPath(meshDag, component)
-                #print 'get dag node :', meshDag.fullPathName()
+                #print('get dag node :', meshDag.fullPathName())
             except:#2016ではノード出したばかりの状態でシェイプがなぜか帰ってくるのでエラー回避
                 iter.next()
                 continue
@@ -59,13 +59,13 @@ class StoreSkinWeight():
                 iter.next()
                 continue
             
-            #print 'get current vtx :', node, mesh_path_name
+            #print('get current vtx :', node, mesh_path_name)
             skinFn, vtxArray, skinName = self.adust_to_vertex_list(meshDag, component, force=True)
-            #print 'get vtx array :', vtxArray
+            #print('get vtx array :', vtxArray)
             vtxArrays += sorted(vtxArray)
             #return vtxArray
-            #print 'get selected vtx array', vtxArray
-            #print 'get current vtx :', vtxArray
+            #print('get selected vtx array', vtxArray)
+            #print('get current vtx :', vtxArray)
             iter.next()
         return vtxArrays
        
@@ -80,22 +80,22 @@ class StoreSkinWeight():
         while not iter.isDone():
             loop += 1
             if loop >= 10000:
-                print 'too many loop :'
+                print('too many loop :')
                 return []
             meshDag = om.MDagPath()
             component = om.MObject()
             try:
                 iter.getDagPath(meshDag, component)
-                #print 'get dag node :', meshDag.fullPathName()
+                #print('get dag node :', meshDag.fullPathName())
             except:#2016ではノード出したばかりの状態でシェイプがなぜか帰ってくるのでエラー回避
                 iter.next()
                 continue
             mesh_path_name = meshDag.fullPathName()
             om_add_nodes += [mesh_path_name]
             iter.next()
-        #print 'om add nodes :', om_add_nodes
+        #print('om add nodes :', om_add_nodes)
         om_add_nodes = [cmds.listRelatives(node, p=True, f=True)[0] if cmds.nodeType(node) == 'mesh' else node for node in om_add_nodes]
-        #print 'om add nodes :', om_add_nodes
+        #print('om add nodes :', om_add_nodes)
         
         if cmds.selectMode(q=True, co=True):
             #コンポーネント選択の時でもこのポイントがハイライトされた時表示されるように末端まで取る
@@ -123,10 +123,10 @@ class StoreSkinWeight():
             
             try:
                 sList.getDagPath(0, meshDag, component)
-                #print 'get dag node :', meshDag.fullPathName()
+                #print('get dag node :', meshDag.fullPathName())
             except Exception as e:#2016ではノード出したばかりの状態でシェイプがなぜか帰ってくるのでエラー回避
                 #iter.next()
-                print 'get dag path error :'
+                print('get dag path error :')
                 continue
             
             skinFn, vtxArray, skinName = self.adust_to_vertex_list(meshDag, component)
@@ -141,7 +141,7 @@ class StoreSkinWeight():
                 if not skinFn or not skinName:
                     #iter.next()
                     return None, None, None
-                #print 'get skin node :', skinFn, skinName
+                #print('get skin node :', skinFn, skinName)
                 
                 if not meshDag.hasFn(om. MFn.kMesh) or skinName == '' : #メッシュ持ってるかどうか
                     #iter.next()
@@ -164,7 +164,7 @@ class StoreSkinWeight():
             mUtl = om.MScriptUtil()#MScriptUtilはインスタンス化を個別にする必要があるみたい。
             
             meshFn = om.MFnMesh(meshDag)
-            #print 'get meshFn Vtx :', meshFn
+            #print('get meshFn Vtx :', meshFn)
             if "vtx" == cmpType:
                 vtxArray = om.MIntArray()
                 compFn.getElements(vtxArray)
@@ -185,7 +185,7 @@ class StoreSkinWeight():
             elif "face" == cmpType:
                 fid = om.MIntArray()
                 compFn.getElements(fid)
-                #print 'get face id :', fid
+                #print('get face id :', fid)
                 fSet = []
                 vid = om.MIntArray()
                 for f in fid:
@@ -198,14 +198,14 @@ class StoreSkinWeight():
                 vids = range(meshFn.numVertices())
                 vtxArray = om.MIntArray()
                 [vtxArray.append(id) for id in vids]
-            #print 'get mesh vtx :', vtxArray
+            #print('get mesh vtx :', vtxArray)
             return skinFn, vtxArray, skinName
         
     #ディペンデンシーグラフをたどってスキンクラスタを探す
     def om_get_skin_cluster(self, dagPath=None):
         if not dagPath:
             return None
-        #print 'get dag in skin search :', dagPath.fullPathName()
+        #print('get dag in skin search :', dagPath.fullPathName())
         
         #メッシュのダグノードイテレータを作って探索、ディペンデンシーデンシーグラフ
         #親子付けがある場合末端まで探してしまうので最初に見つかったらDagノードとノードのDagループ両方Breakする
@@ -217,7 +217,7 @@ class StoreSkinWeight():
         
         skinFn = None
         while not dagIterator.isDone():
-            #print 'search skinFn :', dagIterator.fullPathName()
+            #print('search skinFn :', dagIterator.fullPathName())
             curr_obj = dagIterator.currentItem()
             
             #でぃぺんデンシーグラフのイテレータ
@@ -231,9 +231,9 @@ class StoreSkinWeight():
                     currentCluster = itDG.currentItem()
                     skinFn = oma.MFnSkinCluster(currentCluster)
                     clusterName = skinFn.name()
-                    #print 'get skin :', clusterName, dagIterator.fullPathName()
+                    #print('get skin :', clusterName, dagIterator.fullPathName())
                 except Exception as e:
-                    print 'get skin error in om :',e.message
+                    print('get skin error in om :',e.message)
                 if skinFn:#見つかったらすぐ終わり
                     break
                 itDG.next()
@@ -241,7 +241,7 @@ class StoreSkinWeight():
                 break
             dagIterator.next()
         if clusterName:
-            #print 'skincluster founded :', skinFn, clusterName
+            #print('skincluster founded :', skinFn, clusterName)
             return skinFn, clusterName
         else:
             return None, None
@@ -260,12 +260,12 @@ class StoreSkinWeight():
             skinFn = skin_vtx[0]#スキンFn
             vtxArry = skin_vtx[1]#バーテックスIDのリスト
             skinName = skin_vtx[2]#スキン名
-            #print skinName, vtxArry
+            #print(skinName, vtxArry)
             
             mesh_path_name = meshPath.fullPathName()
             
             self.node_skinFn_dict[mesh_path_name] = skinFn
-            #print mesh_path_name
+            #print(mesh_path_name)
             if cmds.nodeType(meshPath.fullPathName()) == 'mesh':
                 mesh_path_name = cmds.listRelatives(mesh_path_name, p=True, f=True)[0]
             
@@ -273,8 +273,8 @@ class StoreSkinWeight():
             meshPath = self.om_get_shape(meshPath.fullPathName())
             meshNode = meshPath.node()
             
-            #print 'try to get skin weight :', mesh_path_name, skinFn, vtxArry
-            #print 'try to get skin weight :', meshPath.fullPathName()
+            #print('try to get skin weight :', mesh_path_name, skinFn, vtxArry)
+            #print('try to get skin weight :', meshPath.fullPathName())
             
             # 指定の頂点をコンポーネントとして取得する
             singleIdComp = om.MFnSingleIndexedComponent()
@@ -287,7 +287,7 @@ class StoreSkinWeight():
             infIndices = om.MIntArray( infDags.length() , 0 )
             for x in range(infDags.length()):
                 infIndices[x] = int(skinFn.indexForInfluenceObject(infDags[x]))
-            #print 'get influence id list :', infIndices
+            #print('get influence id list :', infIndices)
                 
             # すべてのウエイトの値を取得
             weights = om.MDoubleArray()
@@ -295,18 +295,18 @@ class StoreSkinWeight():
             infCountPtr = infCountUtil.asUintPtr()
             
             try:
-                #print 'get weight :',meshPath , vertexComp , weights , infCountPtr
+                #print('get weight :',meshPath , vertexComp , weights , infCountPtr)
                 skinFn.getWeights( meshPath , vertexComp , weights , infCountPtr )
             except Exception as e:
-                print 'get skin weight error :', e.message
+                print('get skin weight error :', e.message)
                 continue
-            #print 'check weight data type :', type(weights)
+            #print('check weight data type :', type(weights))
             weights = self.conv_weight_shape(len(infIndices), weights)
-            #print "getWeights()", weights
+            #print("getWeights()", weights)
             
             #インフルエンス名をフルパスで取得
             influence_list = [infDags[x].fullPathName() for x in range(len(infIndices))]
-            #print 'all ifluences :', influence_list
+            #print('all ifluences :', influence_list)
             
             self.node_vtx_dict[mesh_path_name] = vtxArry
             self.all_skin_clusters[mesh_path_name] = skinName

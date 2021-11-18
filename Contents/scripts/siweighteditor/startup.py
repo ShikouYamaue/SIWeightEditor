@@ -62,15 +62,15 @@ def register_runtime_command(opt):
 
     exits = mel.eval('''exists "{}";'''.format(opt['cmd_name']))
     if exits:
-        #print 'custom command is already exist : *-*-*-*-*-*-*-*-*-*-*-*-*-***-**-*'
+        #print('custom command is already exist : *-*-*-*-*-*-*-*-*-*-*-*-*-***-**-*')
         return
     try:
         mel.eval(runtime_cmd.format(**opt))
         mel.eval(name_cmd.format(**opt))
 
     except Exception as e:
-        print opt['cmd_name']
-        print opt['command']
+        print(opt['cmd_name'])
+        print(opt['command'])
         raise e
 
 

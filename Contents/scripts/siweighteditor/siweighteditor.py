@@ -22,6 +22,7 @@ import os
 import locale
 import json
 import webbrowser
+import importlib
 
 from . import common
 from . import lang
@@ -35,8 +36,8 @@ from . import joint_rule_editor
 from . import go
 from . import prof
 from . import smooth_setting_editor
-reload(smooth_setting_editor)
-reload(prof)
+importlib.reload(smooth_setting_editor)
+importlib.reload(prof)
 
 import imp
 try:
@@ -103,9 +104,9 @@ def timer(func):
         start = time.time()#開始時間
         func(*args, **kwargs)#関数実行
         end = time.time()#終了時間
-        print '-'*50
-        print 'Execution time :', func.__name__, end - start
-        print '-'*50
+        print('-'*50)
+        print('Execution time :', func.__name__, end - start)
+        print('-'*50)
     return wrapper
     
     
@@ -262,7 +263,7 @@ class RightClickTableView(QTableView):
     ignore_key_input = False
     def mouseReleaseEvent(self, e):
         self.mouse_pos = QCursor.pos()
-        #print 'view mouse release event :', self.mouse_pos
+        #print('view mouse release event :', self.mouse_pos)
         if e.button() == Qt.RightButton:
             self.rightClicked.emit()
         else:
@@ -309,16 +310,16 @@ class MyHeaderView(QHeaderView):
             
     #セクションがクリックされた時のスロット
     def double_clicked_section(self, e):
-        #print 'double clicked section', e
+        #print('double clicked section', e)
         self.doubleClicked.emit(e)
         
     #セクションがクリックされた時のスロット
     def clicked_section(self, e):
-        print ' clicked_section', e
+        print(' clicked_section', e)
         
     #セクションが範囲選択された時のスロット
     def section_enter(self, e):
-        print 'section_enter', e
+        print('section_enter', e)
 
     #@prof.profileFunction()
     def paintSection(self, painter, rect, index):
@@ -357,7 +358,7 @@ class MyHeaderView(QHeaderView):
         sel_model = self.selectionModel()#ビューに設定されている選択モデルを取得する
         selected_item = sel_model.currentIndex()
         is_active = sel_model.columnIntersectsSelection(index, selected_item)
-        #print 'header is active :', is_active
+        #print('header is active :', is_active)
         return is_active
         
         
@@ -516,7 +517,7 @@ class TableModel(QAbstractTableModel):
                 #指定桁数にまとめる、formatで自動的に桁数そろえてくれるみたい
                 return FLOAT_FORMAT.format(weight)
             except Exception as e:
-                #print e.message
+                #print(e.message)
                 return None
         elif role == Qt.BackgroundRole:#バックグラウンドロールなら色変更する
             if row in self.mesh_rows:
@@ -573,7 +574,7 @@ class TableModel(QAbstractTableModel):
             local_column = inf_id_list[column]
             value  = self._data[row][local_column]
         except Exception as e:
-            #print 'get data error :', e
+            #print('get data error :', e)
             value = None
         return value
         
@@ -581,7 +582,7 @@ class TableModel(QAbstractTableModel):
     def setData(self, index, value, role=Qt.EditRole):
         if not isinstance(index, tuple):
             if not index.isValid() or not 0 <= index.row() < len(self._data):
-                print 'can not set data : retrun'
+                print('can not set data : retrun')
                 return
             row = index.row()
             column = index.column()
@@ -645,11 +646,11 @@ class OptionWindow():
     def __init__(self, offset=False):
         global WINDOW
         try:
-            #print 'widget visivle :', WINDOW.isVisible() 
+            #print('widget visivle :', WINDOW.isVisible() )
             WINDOW.closeEvent(None)
             WINDOW.close()
         except Exception as e:
-            #print 'window close error :', e.message
+            #print('window close error :', e.message)
             pass
         WINDOW = WeightEditorWindow()
         WINDOW.init_flag=False
@@ -730,7 +731,7 @@ class WeightEditorWindow(qt.DockWindow):
             return save_data
             
     def init_save_data(self):
-        print 'data load error , init save data :'
+        print('data load error , init save data :')
         self.area = None
         self.pw = 200
         self.ph = 200
@@ -772,7 +773,7 @@ class WeightEditorWindow(qt.DockWindow):
             pos = dock_dtrl.mapToGlobal(QPoint(0, 0))
         else:
             pos = self.pos()
-        #print 'check pos :', pos
+        #print('check pos :', pos)
         size = self.size()
         save_data['pw'] = pos.x()
         save_data['ph'] = pos.y()
@@ -805,7 +806,7 @@ class WeightEditorWindow(qt.DockWindow):
             json.dump(save_data, f)
             
     #def moveEvent(self, e):
-        #print 'window_move :' , e
+        #print('window_move :' , e)
         
     pre_selection_node = []
     def __init__(self, parent = None, init_pos=False):
@@ -1723,7 +1724,7 @@ class WeightEditorWindow(qt.DockWindow):
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
         self.search_but_group.addButton(self.refine_but , 0)
         self.search_but_group.addButton(self.add_but , 1)
-        #print 'search  mode :', self.search_mode
+        #print('search  mode :', self.search_mode)
         if self.search_mode < 0:
             self.search_mode = 0
         self.search_but_group.button(self.search_mode).setChecked(True)
@@ -1905,7 +1906,7 @@ class WeightEditorWindow(qt.DockWindow):
             is_active = self.headerView.check_section_is_active(id)
             if is_active:
                 self.move_inf_list.append(inf)
-        #print 'get move inf :', self.move_inf_list
+        #print('get move inf :', self.move_inf_list)
         
     def paste_move_influences(self):
         if not self.move_inf_list:
@@ -1934,7 +1935,7 @@ class WeightEditorWindow(qt.DockWindow):
         add_remove_inf_list = []
         for id, inf in enumerate(self.all_influences):
             is_active = self.headerView.check_section_is_active(id)
-            #print 'is active :', id, inf, is_active
+            #print('is active :', id, inf, is_active)
             if is_active:
                 add_remove_inf_list.append(inf)
                 
@@ -1946,17 +1947,17 @@ class WeightEditorWindow(qt.DockWindow):
             srcSkinCluster = srcSkinCluster[0]
             influences = cmds.skinCluster(srcSkinCluster, q=True, inf=True)
             influences = cmds.ls(influences, l=True)
-            #print 'current influences :', influences
+            #print('current influences :', influences)
             if mode == 'add':
                 sub_influences = list(set(add_remove_inf_list) - set(influences))
-                #print 'add inf :', node, sub_influences
+                #print('add inf :', node, sub_influences)
                 if sub_influences:
                     cmds.skinCluster(node, e=True, ai=sub_influences, lw=True, ug=False, wt=0, ps=0)
             elif mode == 'remove':
                 if len(influences) <= 1:
                     continue
                 sub_influences = list(set(add_remove_inf_list) & set(influences))
-                #print 'add inf :', node, sub_influences
+                #print('add inf :', node, sub_influences)
                 if sub_influences:
                     cmds.skinCluster(node, e=True, ri=sub_influences)
                 
@@ -1971,7 +1972,7 @@ class WeightEditorWindow(qt.DockWindow):
             all_influences = cmds.skinCluster(srcSkinCluster, q=True, inf=True)
             weighted_influences = cmds.skinCluster(srcSkinCluster, q=True, wi=True)
             sub_influences = list(set(all_influences) - set(weighted_influences))
-            #print 'unused infs :', sub_influences
+            #print('unused infs :', sub_influences)
             if sub_influences:
                 cmds.skinCluster(node, e=True, ri=sub_influences)
         self.get_set_skin_weight()
@@ -1989,9 +1990,9 @@ class WeightEditorWindow(qt.DockWindow):
         for row in self.copy_vtx_rows:
             self.copy_weights_list.append(self._data[row])
             self.copy_influences_list.append(self.vtx_row_dict[row][2])
-        #print 'copy vertices :', vertex
-        #print 'copy nfluences :', self.copy_influences_list
-        #print 'copy weights :', self.copy_weights_list
+        #print('copy vertices :', vertex)
+        #print('copy nfluences :', self.copy_influences_list)
+        #print('copy weights :', self.copy_weights_list)
         #モデルのコピー対象リストを更新
         self.weight_model.copy_vertex_rows = self.copy_vtx_rows
         self.sel_model.clearSelection()
@@ -2019,7 +2020,7 @@ class WeightEditorWindow(qt.DockWindow):
                 continue
             mesh_list.append(node)
             mesh_inflences_list.append(self.vtx_row_dict[row][2])
-        #print 'mesh inf :', mesh_list, mesh_inflences_list
+        #print('mesh inf :', mesh_list, mesh_inflences_list)
         copy_influences  = []
         for influences in self.copy_influences_list:
             if not influences in copy_influences:
@@ -2029,12 +2030,12 @@ class WeightEditorWindow(qt.DockWindow):
         for influences in copy_influences:
             all_copy_influences += influences
         all_copy_influences = list(set(all_copy_influences))
-        #print 'all inf :', all_copy_influences
+        #print('all inf :', all_copy_influences)
         #なければ追加
         add_inf_flag = False
         for mesh_inflences, node in zip(mesh_inflences_list, mesh_list):
             sub_influences = list(set(all_copy_influences) - set(mesh_inflences))
-            #print 'add influences :', node, sub_influences
+            #print('add influences :', node, sub_influences)
             if sub_influences:
                 add_inf_flag = True
                 cmds.skinCluster(node, e=True, ai=sub_influences, lw=True, ug=False, wt=0, ps=0)
@@ -2067,7 +2068,7 @@ class WeightEditorWindow(qt.DockWindow):
                         paste_weights[i] = 0.0
                 else:
                     paste_weights[i] = 0.0
-            #print 'paste weights :', paste_weights
+            #print('paste weights :', paste_weights)
             self.update_rows.add(row)
             
         #ベイク計算に入る
@@ -2081,7 +2082,7 @@ class WeightEditorWindow(qt.DockWindow):
     @timer
     def cell_copy(self):
         self.copy_cell_list = self.selected_items
-        #print 'copy cells :', self.copy_cell_list
+        #print('copy cells :', self.copy_cell_list)
         self.weight_model.copy_cell_list = self.copy_cell_list
         self.sel_model.clearSelection()
         self.refresh_table_view()
@@ -2110,8 +2111,8 @@ class WeightEditorWindow(qt.DockWindow):
         max_column = max(self.copy_relative_pos_list, key=lambda x: x[1])[1]
         self.cell_row_length = max_row - min_row + 1
         self.cell_column_length = max_column - min_column + 1
-        #print 'length :', self.cell_row_length, self.cell_column_length
-        #print 'copied values :', self.copy_value_list
+        #print('length :', self.cell_row_length, self.cell_column_length)
+        #print('copied values :', self.copy_value_list)
         self.change_static_text()#右クリック時リフレッシュされない対策
         
     #エクセルライクペースト
@@ -2204,7 +2205,7 @@ class WeightEditorWindow(qt.DockWindow):
                                             
     def weight_transfer_copy(self):
         msg = WEIGHT_TRANSFER_MULTIPLE.stock_copy_mesh()
-        print msg
+        print(msg)
         self.set_message(msg=msg, error=False)
         
     def weight_transfer_paste(self):
@@ -2221,7 +2222,7 @@ class WeightEditorWindow(qt.DockWindow):
     
     def smooth_weight(self,  keep_zero=False, blend=False):
         save_data = smooth_setting_editor.SubWindow.load_data()
-        #print 'smooth setting :', save_data
+        #print('smooth setting :', save_data)
         sw = save_data['weight_difference']
         swi = save_data['smoothing_iterations']
         omi = save_data['obey_max_inf']
@@ -2272,11 +2273,11 @@ class WeightEditorWindow(qt.DockWindow):
                 for row in self.update_rows:
                     weights = self._data[row]
                     org_weights = vertex_org_weight_dict[row] 
-                    #print 'new weights :', weights
-                    #print 'org weights :', org_weights
+                    #print('new weights :', weights)
+                    #print('org weights :', org_weights)
                     for i, ow in enumerate(org_weights):
                         if ow == 0.0:
-                            #print 'keep zero', row, i
+                            #print('keep zero', row, i)
                             weights[i] = 0.0
                             
             #元のウェイト値との混ぜ率を適用する
@@ -2478,11 +2479,11 @@ class WeightEditorWindow(qt.DockWindow):
     def toggle_lock_weight(self,section_id):
         for lock_data in self.weight_lock_data:
             if lock_data[1] == section_id:
-                #print 'unlock wt'
+                #print('unlock wt')
                 self.unlock_weight(all_lock=True, section_ids=[section_id])
                 break
         else:
-            #print 'lock wt'
+            #print('lock wt')
             self.lock_weight(all_lock=True, section_ids=[section_id])
         self.sel_model.clearSelection()
             
@@ -2490,7 +2491,7 @@ class WeightEditorWindow(qt.DockWindow):
         for node in self.hl_nodes:
             skin_cluster = self.all_skin_clusters[node]
             vertices = self.node_vtx_dict[node]
-            #print len(vertices)
+            #print(len(vertices))
             lock_influences = [self.all_influences[section_id] for section_id in section_ids]
             pre_lock_data_dict = self.decode_lock_data(skin_cluster)
             for vtx in vertices:
@@ -2510,7 +2511,7 @@ class WeightEditorWindow(qt.DockWindow):
                 try:
                     cmds.deleteAttr(skin_cluster+'.'+self.lock_attr_name)
                 except Exception as e:
-                    print 'clear lock error :', skin_cluster, e.message
+                    print('clear lock error :', skin_cluster, e.message)
                     pass
             else:
                 cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, 
@@ -2678,7 +2679,7 @@ class WeightEditorWindow(qt.DockWindow):
                     try:
                         cmds.deleteAttr(skin_cluster+'.'+self.lock_attr_name)
                     except Exception as e:
-                        print 'clear lock error :', skin_cluster, e.message
+                        print('clear lock error :', skin_cluster, e.message)
                         pass
                 else:
                     cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
@@ -2707,7 +2708,7 @@ class WeightEditorWindow(qt.DockWindow):
                         lock_data_dict[int(split_lock_data[0])] = lock_inf_str.split(',')
             return lock_data_dict
         except Exception as e:#読み込み失敗したらクリアする
-            print 'decode locke data error :', e.message
+            print('decode locke data error :', e.message)
             return {}
                 
     #ロック状態のクリア
@@ -2722,7 +2723,7 @@ class WeightEditorWindow(qt.DockWindow):
                 try:
                     cmds.deleteAttr(skin_cluster+'.'+self.lock_attr_name)
                 except Exception as e:
-                    print 'clear lock error :', skin_cluster, e.message
+                    print('clear lock error :', skin_cluster, e.message)
                     pass
             
     #コピペ右クリックメニュー
@@ -2832,7 +2833,7 @@ class WeightEditorWindow(qt.DockWindow):
         
         if ctrl_mod:
             value *= -1
-        #print 'static_value :', value, self.add_mode
+        #print('static_value :', value, self.add_mode)
         
         self.input_box_value = value
         self.calc_cell_value(from_spinbox=False, from_input_box=True)
@@ -2854,9 +2855,9 @@ class WeightEditorWindow(qt.DockWindow):
     #@timer
     def change_add_mode(self, id, change_only=False):
         #モード変更があった場合はレンジを変更する
-        #print 'add mode :', self.add_mode
+        #print('add mode :', self.add_mode)
         if id != self.add_mode:
-            #print 'change sld range :', id
+            #print('change sld range :', id)
             if id == 0:
                 self.weight_input.setRange(0, MAXIMUM_WEIGHT)
                 self.weight_input.setDecimals(FLOAT_DECIMALS)
@@ -2875,7 +2876,7 @@ class WeightEditorWindow(qt.DockWindow):
             
             #選択した値がすべて同じ値ならスピンボックスに同値を入れる
             for item in self.selected_items:
-                #print 'check abs value :', item.row(), item.column()
+                #print('check abs value :', item.row(), item.column())
                 sel_value = self.weight_model.get_data(item)
                 #値が0.0が混じる場合は確認する必要ないので逃げる
                 if sel_value == 0.0:
@@ -2892,7 +2893,7 @@ class WeightEditorWindow(qt.DockWindow):
                     return
                 value *= MAXIMUM_WEIGHT
                 value = round(value, FLOAT_DECIMALS)
-                #print 'get single abs value :', value
+                #print('get single abs value :', value)
                 self.weight_input_sld.setValue(value* 10**FLOAT_DECIMALS)
                 if change_only:
                     return
@@ -2926,7 +2927,7 @@ class WeightEditorWindow(qt.DockWindow):
         
     pre_row_count = 0
     def re_arrangement_but(self, win_x, grid_v, but_list, loop, layout):
-        #print ' re_arrangement_but :'
+        #print(' re_arrangement_but :')
         if loop >100:
             return
         if not but_list:
@@ -2978,8 +2979,8 @@ class WeightEditorWindow(qt.DockWindow):
             if cmds.selectMode(q=True, co=True) and not self.focus_but.isChecked():
                 return
         except Exception as e:
-            #print e.message
-            #print 'UI Allready Closed :'
+            #print(e.message)
+            #print('UI Allready Closed :')
             return
         if self.hilite_flag:
             self.hilite_flag = False
@@ -3151,7 +3152,7 @@ class WeightEditorWindow(qt.DockWindow):
                     
                     #ウェイトの合計、使用インフルエンス数が不正かどうかを格納しておく
                     weight_sum = round(sum(weight_list), 12)#合計値
-                    #print 'sum weights :', weight_sum
+                    #print('sum weights :', weight_sum)
                     influence_count = all_influences_count - weight_list.count(0.0)
                     self.over_influence_limit_dict[self.all_rows] = influence_count
                     if weight_sum < 1.0:
@@ -3193,7 +3194,7 @@ class WeightEditorWindow(qt.DockWindow):
         #サーチ文字リストがあればフィルターする
         if self.search_joint_list and self.search_but_group.checkedId() == 0:
             self.all_influences = [inf for inf in self.all_influences if any([True if s.upper() in inf.split('|')[-1].upper() else False for s in self.search_joint_list])]
-        #print 'all_influences :',self.all_influences
+        #print('all_influences :',self.all_influences)
         #オーバーライドカラーを取得しておく
         self.store_infulence_override_color()
         
@@ -3230,7 +3231,7 @@ class WeightEditorWindow(qt.DockWindow):
                 try:
                     self.vtx_lock_data_dict[vtx_name].add(node_influence_id_dict[influence])
                 except Exception as e:
-                    print 'lock setting error :', e.message
+                    print('lock setting error :', e.message)
                     pass
                    
         try:#都度メモリをきれいに
@@ -3238,19 +3239,19 @@ class WeightEditorWindow(qt.DockWindow):
             self.weight_model._data = {}
         except Exception as e:
             pass
-            #print e.message, 'in get set' 
+            #print(e.message, 'in get set' )
         try:#都度メモリをきれいに
             self.weight_model.deleteLater()
             del self.weight_model
         except Exception as e:
             pass
-            #print e.message, 'in get set' 
+            #print(e.message, 'in get set' )
         try:
             self.sel_model.deleteLater()
             del self.sel_model
         except Exception as e:
             pass
-            #print e.message, 'in get set' 
+            #print(e.message, 'in get set' )
         try:
             self.weight_model = TableModel(self._data, self.view_widget, self.mesh_rows, 
                                             self.all_influences, self.v_header_list, self.inf_color_list)
@@ -3300,7 +3301,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.reset_message()#メッセージ初期化
         if self.pre_tool:
             self.hilite_flag = True#get_setしないためのフラグ
-            #print 'hl nodes :', self.hl_nodes
+            #print('hl nodes :', self.hl_nodes)
             if self.pre_comp_mode:
                 cmds.selectMode(co=True)
                 #cmds.hilite(self.hl_nodes, r=True)
@@ -3308,7 +3309,7 @@ class WeightEditorWindow(qt.DockWindow):
                 cmds.selectMode(o=True)
             if self.pre_tool:
                 cmds.setToolTo(self.pre_tool)
-            #print 'header selection :', self.header_selection
+            #print('header selection :', self.header_selection)
             if self.header_selection:
                 cmds.hilite(self.hl_nodes, r=True)
                 cmds.select(self.header_selection, r=True)
@@ -3342,12 +3343,12 @@ class WeightEditorWindow(qt.DockWindow):
             return
         '''
         if MAYA_VER <= 2016:#2016以前はIntersectsで正しくとれる
-            rows = [id for id in xrange(row_count) if self.sel_model.rowIntersectsSelection(id, selected_item)]
+            rows = [id for id in range(row_count) if self.sel_model.rowIntersectsSelection(id, selected_item)]
         else:#PySide2ではなぜかrowIntersectsSelectionが正しく機能しない問題
             rows = list(set([item.row() for item in self.sel_model.selectedIndexes()]))
         '''
         rows = list(set([item.row() for item in self.selected_items]))
-        #print rows
+        #print(rows)
         if rows:
             #高速選択するために頂点情報をつながり形式にしてまとめるvtx[0:5000]みたいな
             #全選択だと展開時より20倍くらい早い
@@ -3417,7 +3418,7 @@ class WeightEditorWindow(qt.DockWindow):
         selected_item = self.sel_model.currentIndex()
         if not selected_item:
             return
-        self.sel_columns = [id for id in xrange(column_count) if self.sel_model.columnIntersectsSelection(id, selected_item)]
+        self.sel_columns = [id for id in range(column_count) if self.sel_model.columnIntersectsSelection(id, selected_item)]
         for i, influence in enumerate(self.all_influences):
             try:
                 if i in self.sel_columns:
@@ -3441,7 +3442,7 @@ class WeightEditorWindow(qt.DockWindow):
                 if MAYA_VER >= 2016:
                     cmds.setAttr(influence + '.overrideEnabled', 0)
             except Exception as e:
-                #print e.message
+                #print(e.message)
                 self.set_message(msg='- Joint Hilite Error : Override attr still locked -', error=True)
                 pass
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
@@ -3467,7 +3468,7 @@ class WeightEditorWindow(qt.DockWindow):
             try:#オーバーライド設定を戻す
                 cmds.setAttr(influence + '.overrideEnabled', self.joint_override_dict[influence])
             except Exception as e:
-                #print e.message
+                #print(e.message)
                 self.set_message(msg='- Joint Unhilite Error : Override attr still locked -', error=True)
                 pass
             if MAYA_VER <= 2015:#2015以下はオーバーライドカラー設定も戻す
@@ -3565,60 +3566,60 @@ class WeightEditorWindow(qt.DockWindow):
     editing_count = 0
     @timer
     def calc_cell_value(self, from_spinbox=False, from_input_box=False, from_slider=False):
-        #print 'calc cell value :'
+        #print('calc cell value :')
         self.from_spinbox = from_spinbox
         wheel_flag = self.weight_input.wheel_flag#ウィンドウのフォーカス外れていてもホイール時は更新するフラグ
-        #print 'wheel flag :', wheel_flag
+        #print('wheel flag :', wheel_flag)
         
         
         if self.closed_flag:#ウィンドウ閉じた後は何もしない
-            #print 'allready closed return :'
+            #print('allready closed return :')
             return
             
         if self.from_spinbox:
-            #print 'from spin box !!:'
+            #print('from spin box !!:')
             self.from_spinbox = False
             if not self.weight_input.hasFocus() and not wheel_flag:
-                #print 'from spin box and not focus return:'
+                #print('from spin box and not focus return:')
                 if self.re_forcus_flag:
                     self.weight_input.setFocus()
                 return
             #return
             
         if not self.change_flag and from_slider and not wheel_flag:
-            #print 'not change return :'
+            #print('not change return :')
             self.from_spinbox = False
             return
             
         if not self.selected_items:
-            #print 'no selection return :'
+            #print('no selection return :')
             self.from_spinbox = False
             return
             
         #Editing_Finishedが二回走らないように予防
         if from_spinbox:
             if self.editing_count == 1:
-                #print 'from spin box 2nd return :'
+                #print('from spin box 2nd return :')
                 self.editing_count = 0
                 self.weight_input.setFocus()
                 return
             else:
-                #print 'from spin box 1st go :'
+                #print('from spin box 1st go :')
                 self.re_forcus_flag = True
             self.editing_count += 1
         #絶対値モードでフォーカス外したときに0だった時の場合分け
         '''
         if from_spinbox and not self.key_pressed and not from_input_box:
-            #print 'focus error :'
-            print 'from spin and no key and not input box return :'
+            #print('focus error :')
+            print('from spin and no key and not input box return :')
             self.from_spinbox = False
             return
         '''
-        #print 'calc Cell value *+*+**+*+*+*+**+*:', self.caluc_times
+        #print('calc Cell value *+*+**+*+*+*+**+*:', self.caluc_times)
         #入力重複回避ここまで------------------------------------------------------------
         #ウィンドウが非アクティブの場合はアクティブにする
         if not self.isActiveWindow():
-            #print 'set active window :'
+            #print('set active window :')
             QApplication.setActiveWindow(self)
         
         self.counter.reset()
@@ -3637,7 +3638,7 @@ class WeightEditorWindow(qt.DockWindow):
             else:
                 new_value = self.input_box_value
             
-        #print 'calc cell value :', self.caluc_times, 'val :', new_value
+        #print('calc cell value :', self.caluc_times, 'val :', new_value)
         self.caluc_times += 1
         #絶対値の時の処理
         self.update_rows = set()
@@ -3657,13 +3658,13 @@ class WeightEditorWindow(qt.DockWindow):
                 node = self.vtx_row_dict[row][6]
                 inf_id_list = self.node_influence_id_list_dict[node]
                 local_column = inf_id_list[column]#空白セルを考慮したローカルカラム取得
-                #print 'get weight list :', weight_list
+                #print('get weight list :', weight_list)
                 weight_list[local_column] = new_value
                 #焼き込みようリストを更新しておく
                 self.update_rows.add(row)
                 self.row_column_dict[row].append(column)#行に対応する選択カラムを記録する
             after_value = new_value
-            #print 'new_abs_value',new_value, from_spinbox, from_input_box
+            #print('new_abs_value',new_value, from_spinbox, from_input_box)
         else:
             #加算モードで0なら変化なしなので逃げる
             if new_value == 0.0:
@@ -3703,8 +3704,8 @@ class WeightEditorWindow(qt.DockWindow):
                 inf_id_list = self.node_influence_id_list_dict[node]
                 local_column = inf_id_list[column]#空白セルを考慮したローカルカラム取得
                 weight_list[local_column] = added_value
-                #print 'calc 2 num :', org_value, new_value
-                #print 'new_add_value',added_value, 'spin :', from_spinbox, 'input :', from_input_box
+                #print('calc 2 num :', org_value, new_value)
+                #print('new_add_value',added_value, 'spin :', from_spinbox, 'input :', from_input_box)
                     
             #処理後のスピンボックスの値を設定
             if from_spinbox or from_input_box:
@@ -3731,7 +3732,7 @@ class WeightEditorWindow(qt.DockWindow):
     #@prof.profileFunction()
     @timer
     def precalculate_bake_weights(self, realbake=True, ignoreundo=False, enforce=0, round_digit=None, move_weight=False):
-        #print 'precalculate_bake_weights : '
+        #print('precalculate_bake_weights : ')
         #self.counter.reset()
         #enforce-1は強制正規化フラッグ扱い
         if round_digit:#丸めの時は正規化しない
@@ -3739,7 +3740,7 @@ class WeightEditorWindow(qt.DockWindow):
         else:
             norm_flag = self.norm_but.isChecked()
         new_data = self.weight_model._data
-        #print 'get new_data :', new_data
+        #print('get new_data :', new_data)
         if MAYA_VER >= 2016:
             self.bake_node_id_dict = defaultdict(lambda : om2.MIntArray())
             self.bake_node_weight_dict = defaultdict(lambda : om2.MDoubleArray())
@@ -3788,23 +3789,23 @@ class WeightEditorWindow(qt.DockWindow):
             if move_weight:
                 copy_id_set = self.node_copy_id_dict[node]
                 locked_inf_id_set = set(locked_inf_id_list)
-                #print 'copy inf id :', copy_id_list
+                #print('copy inf id :', copy_id_list)
                 move_sum = 0.0
                 #ウェイトコピー元を0.0にして値を積算する
                 copy_column_id_set = copy_id_set - locked_inf_id_set
                 for id in copy_column_id_set :
                     move_sum += new_weight[id] 
                     new_weight[id] = 0.0
-                #print 'movesum weight :', move_sum
+                #print('movesum weight :', move_sum)
                 #ペースト先に均等に分配
                 node_influence_id_dict = self.node_influence_id_dict_dict[node]
                 selected_inf_ids = [node_influence_id_dict[self.all_influences[column]] for column in self.row_column_dict[row]]
                 paste_column_id_set = set(selected_inf_ids) - locked_inf_id_set
-                #print 'paste id :', paste_column_id_set
+                #print('paste id :', paste_column_id_set)
                 paste_count = len(paste_column_id_set)
                 if paste_count :
                     paste_value = move_sum / paste_count 
-                    #print "value :", paste_value
+                    #print("value :", paste_value)
                     for id in paste_column_id_set:
                         new_weight[id] += paste_value
                     
@@ -3892,7 +3893,7 @@ class WeightEditorWindow(qt.DockWindow):
                         for inf_id in column_inf_id_list:
                             pressed_weight[inf_id] = new_weight[inf_id]
                         new_weight = pressed_weight
-                        #print 'use pressed weight :', pressed_weight
+                        #print('use pressed weight :', pressed_weight)
                     
                     select_sum = sum([new_weight[i] for i in column_inf_id_list if i is not None])#選択してるカラムの合計値
                     other_inf_id_list = list(set(row_inf_id_list) - set(column_inf_id_list))
@@ -3936,7 +3937,7 @@ class WeightEditorWindow(qt.DockWindow):
                             else:
                                 norm_weight.append(new_weight[i]  * other_ratio)
                 new_weight = norm_weight[:]
-                #print 'normalaized weight :', new_weight
+                #print('normalaized weight :', new_weight)
                 
             if bake_weight_flag:#焼きこみフラグ有効なら焼きこみ辞書に追加する
                 #メッシュが変わったらベイク用辞書をまとめて更新する
@@ -4010,7 +4011,7 @@ class WeightEditorWindow(qt.DockWindow):
             self.om_bake_skin_weight(realbake=True, ignoreundo=self.change_flag)
         except Exception as e:
             try:
-                print 'Bake Skin Weight Failure :', e.message
+                print('Bake Skin Weight Failure :', e.message)
                 #プラグインをリロードしてリトライする
                 cmds.loadPlugin('bake_skin_weight.py', qt=True)
                 cmds.pluginInfo('bake_skin_weight.py', e=True, autoload=True)
@@ -4063,7 +4064,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.setup_update_row_data()
         self.precalculate_bake_weights(realbake=False, ignoreundo=False)
         self.change_flag = True#スライダー操作中のみ値の変更を許可するフラグ
-        #print 'sld mouse pressed'
+        #print('sld mouse pressed')
             
     #パーセントの特殊処理、値をリリースして初期値に戻る
     def sld_released(self):
@@ -4085,54 +4086,54 @@ class WeightEditorWindow(qt.DockWindow):
     def remove_job(self):
         global select_job
         if select_job:
-            #print 'remove job :', select_job
+            #print('remove job :', select_job)
             cmds.scriptJob(k=select_job, f=True)
             select_job = None
             
     closed_flag = False
     save_flag = True
     def closeEvent(self, e):
-        #print 'window closed :'
+        #print('window closed :')
         self.disable_joint_override()
         self.erase_func_data()
         self.closed_flag=True
         self.remove_job()
         if self.save_flag:
-            #print 'save data :'
+            #print('save data :')
             self.save_window_data()
         self.deleteLater()
         
     def dockCloseEventTriggered(self):
-        #print 'dock_close_event :'
+        #print('dock_close_event :')
         self.closeEvent(None)
         
     #メモリ解放しっかり
     #ちゃんと消さないと莫大なUIデータがメモリに残り続けるので注意
     def erase_func_data(self):
-        #print self.weight_model._data
+        #print(self.weight_model._data)
         try:
             del self.weight_model._data#一番でかいっぽい
             self.weight_model._data = {}
         except Exception as e:
-            #print e.message, 'in close'
+            #print(e.message, 'in close')
             pass
         try:
             self.weight_model.deleteLater()
             del self.weight_model
         except Exception as e:
-            #print e.message, 'in close'
+            #print(e.message, 'in close')
             pass
         try:
             self.sel_model.deleteLater()
             del self.sel_model
         except Exception as e:
-            #print e.message, 'in close'
+            #print(e.message, 'in close')
             pass
         try:
             self.view_widget.deleteLater()
             del self.view_widget
         except Exception as e:
-            #print e.message, 'in close'
+            #print(e.message, 'in close')
             pass
         
         try:
@@ -4163,9 +4164,9 @@ class WeightEditorWindow(qt.DockWindow):
             del self.vtx_weight_dict
             del self.lock_data_dict
         except Exception as e:
-            #print e.message, 'in close'
+            #print(e.message, 'in close')
             pass
-        #print 'erase func data :'
+        #print('erase func data :')
             
         
 #アンドゥ時に辞書を更新しておく。
@@ -4221,12 +4222,12 @@ def get_current_data():
 def get_ui(name, weight_type):
     all_ui = {w.objectName(): w for w in QApplication.allWidgets()}
     ui = []
-    #print 'name , type :', name ,weight_type
+    #print('name , type :', name ,weight_type)
     for k, v in all_ui.items():
         # 2017だとインスタンスの型をチェックしないと別の物まで入ってきてしまうらしい
         if v.__class__.__name__ == weight_type:
-            #print 'get ui :',  v.__class__.__name__ 
-            #print 'close ui :', v
+            #print('get ui :',  v.__class__.__name__ )
+            #print('close ui :', v)
             v.close()
             #return v
     
@@ -4239,7 +4240,7 @@ def make_ui():
     return ui
    
 def Option(x=None, y=None):
-    #print 'si weight editor : Option'
+    #print('si weight editor : Option')
     global WINDOW
     try:
         WINDOW.dockCloseEventTriggered()
@@ -4259,18 +4260,18 @@ def Option(x=None, y=None):
     try:
         cmds.deleteUI(TITLE+'WorkspaceControl')
     except Exception as e:
-        #print 'delete ui failed :', e.message
+        #print('delete ui failed :', e.message)
         pass
         
     if not save_data['dockable']:
-        #print 'not dockabel'
+        #print('not dockabel')
         window.save_flag=False
         window.close()
         OptionWindow()
         return
     WINDOW = window
     
-    #print "load window size :", save_data['sw'], save_data['sh']
+    #print("load window size :", save_data['sw'], save_data['sh'])
     if save_data:
         width = save_data['sw']
         height = save_data['sh']
@@ -4299,14 +4300,14 @@ def Option(x=None, y=None):
         "closeCallback": None
     }
     WINDOW.setDockableParameters(**opts)
-    #print 'check unque but list :', WINDOW.but_list
+    #print('check unque but list :', WINDOW.but_list)
     WINDOW.init_flag = False
     WINDOW.resizeEvent(WINDOW)
     #WINDOW.show()
     
 #再起動時の復元
 def restoration_workspacecontrol():
-    print 'SI Weight Editor : restoration_workspacecontrol'
+    print('SI Weight Editor : restoration_workspacecontrol')
     global WINDOW
     WINDOW = make_ui()
     restoredControl = omui.MQtUtil.getCurrentParent()

@@ -17,11 +17,11 @@ def mesh_weight_symmetrize():
     if cmds.selectMode( q=True, co=True ):
         selection = cmds.ls(sl=True)
         faces = common.conv_comp(selection , mode='face')
-        #print 'comp mode? :', cmds.selectMode(q=True, co=True)
+        #print('comp mode? :', cmds.selectMode(q=True, co=True))
         if faces == []:
-            #print 'no select'
+            #print('no select')
             return
-        #print faces
+        #print(faces)
         exFace = modeling.face_extraction(faces=faces, deleteOrg=False, selectDuplicated=True, transferWeight=True)
     selection = pm.ls(sl=True)
     #選択しているものの子供のノードを取得してリスト化
