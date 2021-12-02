@@ -84,6 +84,7 @@ HELP_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/blob/master/README.m
 #リリースページ
 REREASE_PATH = 'https://github.com/ShikouYamaue/SIWeightEditor/releases'
 
+
 #焼きこみプラグインをロードしておく
 def load_plugin():
     try:
