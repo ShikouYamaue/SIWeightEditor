@@ -56,7 +56,7 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.4.1'
+VERSION = 'r1.4.2'
 
 TITLE = "SIWeightEditor"
     
