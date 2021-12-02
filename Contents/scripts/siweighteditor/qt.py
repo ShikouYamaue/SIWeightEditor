@@ -228,7 +228,7 @@ def change_widget_color(widget,
         if not isinstance(windowText, list):
             windowText = [windowText, windowText, windowText]
         windowTextColor = QColor(*windowText)
-        #print windowText
+        #print(windowText)
         palette.setColor(QPalette.WindowText, windowTextColor)
     # ウィジェットにパレットを設定
     widget.setAutoFillBackground(True)

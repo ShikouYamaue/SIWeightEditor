@@ -48,10 +48,10 @@ class LapCounter():
                 pass
             
         if print_flag:#表示するかどうかをグローバル変数で管理
-            print '----------------------------------'
+            print('----------------------------------')
             for lap_time in self.lap_list:
-                print lap_time
-            print 'total_time :', total_time
+                print(lap_time)
+            print('total_time :', total_time)
             
     def reset(self):
         self.all_start = time.time()
@@ -72,7 +72,7 @@ class IntegrationCounter():
         
     def integration_print(self, print_flag=True, window=None):
         for string, integration in self.integration_dict.items():
-            print 'Integration time :', string, integration
+            print('Integration time :', string, integration)
         
     def reset(self):
         self.all_start = time.time()

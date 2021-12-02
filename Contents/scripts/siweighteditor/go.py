@@ -16,7 +16,7 @@ def maya_export():
             )
         if not os.path.exists(folderPath):
             os.makedirs(os.path.dirname(folderPath+os.sep))  # 末尾\\が必要なので注意
-        print folderPath
+        print(folderPath)
         files = os.listdir(folderPath)
         sel_dict = dict()
         if files is not None:
@@ -38,11 +38,11 @@ def maya_import():
     folderPath = os.path.join(os.getenv('MAYA_APP_DIR'),'Scripting_Files','go')
     if not os.path.exists(folderPath):
         os.makedirs(os.path.dirname(folderPath+os.sep))  # 末尾\\が必要なので注意
-    #print folderPath
+    #print(folderPath)
     files = os.listdir(folderPath)
     if files is not None:
         for file in files:
-            print file
+            print(file)
             nameSpace = file.replace('.ma', '')
             cmds.file(folderPath+os.sep+file, i=True, typ="mayaAscii", iv=True, mnc=False, options="v=0;", pr=True)
             #重複マテリアルにファイル名が頭に付与されてしまうのを修正

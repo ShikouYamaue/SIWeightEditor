@@ -103,7 +103,7 @@ class WeightTransferMultiple(qt.SubWindow):
                   message= self.msg02)
             return self.msg02
         return 'Set Copy Mesh :\n'+str(self.copy_mesh)
-        #print 'copy mesh :',self.copy_mesh
+        #print('copy mesh :',self.copy_mesh)
         
     def transfer_weight_multiple(self):
         global siweighteditor
@@ -125,7 +125,7 @@ class WeightTransferMultiple(qt.SubWindow):
         if self.transfer_comp:
             self.store_current_vtxArray()
             self.pre_transfer_for_noskin_comp()
-        #print 'transfered mesh :', self.transfer_mesh
+        #print('transfered mesh :', self.transfer_mesh)
         #メッシュ選択がなければ抜ける
         if not self.transfer_mesh and not self.transfer_comp:
             cmds.confirmDialog( title='Error',
@@ -156,12 +156,12 @@ class WeightTransferMultiple(qt.SubWindow):
         for node in self.hl_nodes:
             skin_cluster = cmds.ls(cmds.listHistory(node), type='skinCluster')
             if not skin_cluster:
-                #print 'pre transfer :', node, self.copy_mesh[0]
+                #print('pre transfer :', node, self.copy_mesh[0])
                 weight.transfer_weight(self.copy_mesh[0], node, transferWeight=False)
                 cmds.bakePartialHistory(node, ppt=True)
                 reselection_flag = True
         if reselection_flag:
-            #print 'reselect for undo :'
+            #print('reselect for undo :')
             #アンドゥ、リドゥのためにエディタ側のスキン情報を更新しておく
             cmds.select(self.transfer_comp, r=True)
             siweighteditor.WINDOW.get_set_skin_weight()
@@ -174,7 +174,7 @@ class WeightTransferMultiple(qt.SubWindow):
             return
         skin_cluster = skin_cluster[0]
         self.all_influences = cmds.ls(cmds.skinCluster(skin_cluster, q=True, inf=True), l=True)
-        #print 'get all influences', self.all_influences
+        #print('get all influences', self.all_influences)
         
     #足りないインフルエンスを追加しておく
     def adust_skin_influences(self, node):
@@ -203,7 +203,7 @@ class WeightTransferMultiple(qt.SubWindow):
     def all_transfer(self):
         for node in self.transfer_mesh:
             self.adust_skin_influences(node)#インフルエンスを合わせる
-            #print 'transfer method', self.marged_mesh, 'to',node
+            #print('transfer method', self.marged_mesh, 'to',node)
             weight.transfer_weight(self.marged_mesh, node)
             
         
@@ -213,7 +213,7 @@ class WeightTransferMultiple(qt.SubWindow):
         for node in self.hl_nodes:
             vtxArray = self.store_skin_weight.om_selected_mesh_vertex(node)
             self.node_vtxArray_dict[node] = vtxArray
-        #print 'get vtx array :', self.node_vtxArray_dict
+        #print('get vtx array :', self.node_vtxArray_dict)
         
     def store_weight_data(self):
         self.store_skin_weight.run_store()
@@ -225,9 +225,9 @@ class WeightTransferMultiple(qt.SubWindow):
         self.node_weight_dict  = self.store_skin_weight.node_weight_dict#メッシュごとのウェイト一覧
         self.node_skinFn_dict = self.store_skin_weight.node_skinFn_dict
         self.inf_id_list = self.store_skin_weight.inf_id_list
-        #print 'store inf id list :', self.inf_id_list
+        #print('store inf id list :', self.inf_id_list)
         #for node, infs in self.influences_dict.items():
-            #print 'node inf :', node, infs
+            #print('node inf :', node, infs)
         
     #焼き込み用辞書を初期化しておく
     def init_bake_data(self):
@@ -247,7 +247,7 @@ class WeightTransferMultiple(qt.SubWindow):
     #部分転送
     def part_transfer(self):
         self.init_bake_data()#辞書初期化
-        #print 'part_transfer :', self.transfer_comp
+        #print('part_transfer :', self.transfer_comp)
         
         temp_node_dict = {}
         temp_nodes = []
@@ -271,7 +271,7 @@ class WeightTransferMultiple(qt.SubWindow):
         for node in self.hl_nodes:
             vtxArray = self.node_vtxArray_dict[node]
             
-            #print 'node vtx array :', node , vtxArray
+            #print('node vtx array :', node , vtxArray)
             temp_node = temp_node_dict[node]
             org_infs = self.influences_dict[node]
             temp_infs = self.influences_dict[temp_node]
@@ -279,21 +279,21 @@ class WeightTransferMultiple(qt.SubWindow):
             #inf_id_list = [temp_infs.index(inf) for inf in org_infs]
             #インフルエンスの並び順がずれていることがあるので名前でソートする
             inf_id_list = [org_infs.index(inf) for inf in temp_infs]
-            # print 'adust weight data ;', node, vtxArray
-            # print 'org_infs :', org_infs
-            # print 'temp_infs :', temp_infs
-            # print 'new_inf_list', inf_id_list
+            # print('adust weight data ;', node, vtxArray)
+            # print('org_infs :', org_infs)
+            # print('temp_infs :', temp_infs)
+            # print('new_inf_list', inf_id_list)
             #ウェイトを整理する
             org_weights_list = self.node_weight_dict[node]
             trans_weights_list = self.node_weight_dict[temp_node]
-            #print 'get org weight :', org_weights_list
-            #print 'get trans weight :', trans_weights_list
+            #print('get org weight :', org_weights_list)
+            #print('get trans weight :', trans_weights_list)
             new_weights = []
             org_weights = []
             for id in vtxArray:
                 new_weights += trans_weights_list[id]
                 org_weights += org_weights_list[id]
-            #print 'bake inf ids :', inf_id_list
+            #print('bake inf ids :', inf_id_list)
             #ノードごとのMArray群辞書にキャスト
             self.bake_node_id_dict[node] += vtxArray
             self.bake_node_weight_dict[node] += new_weights

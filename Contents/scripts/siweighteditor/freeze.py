@@ -35,7 +35,7 @@ def main(mesh=None, pop_zero_poly=False):
     engine = 'maya'
     for node, node_l in zip(selection, selection_l):
         if node in zero_mesh:
-            print 'Skip Zero Triangle Mesh :', node
+            print('Skip Zero Triangle Mesh :', node)
             continue
         #メッシュノードを含むオブジェクトのみ処理する。
         meshnode = cmds.listRelatives(node_l, s=True, pa=True, type='mesh', fullPath=True)
@@ -53,7 +53,7 @@ def main(mesh=None, pop_zero_poly=False):
         try:
             cmds.select(s, add=True)
         except Exception as e:
-            print e.message
+            print(e.message)
     if zero_mesh and pop_zero_poly:
         msg = msg01.output()+str(len(zero_mesh))
         msg += '\n'+msg02.output()

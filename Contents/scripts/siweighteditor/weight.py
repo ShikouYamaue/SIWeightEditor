@@ -55,7 +55,7 @@ class WeightCopyPaste():
                 if not os.path.exists(self.protect_path):
                     os.makedirs(self.protect_path)
             except Exception as e:
-                print e.message
+                print(e.message)
                 return
             self.filePath = self.protect_pat+os.sep + self.saveName
         self.fileName = os.path.join(self.filePath, self.saveName + '.json')
@@ -109,15 +109,15 @@ class WeightCopyPaste():
                         common.TemporaryReparent().main(skinMesh, dummyParent=dummy, mode='parent')
                         tempSkinNode = skinMesh#親を取得するためスキンクラスタのあるノードを保存しておく
                     except Exception as e:
-                        print e.message
-                        print 'Error !! Skin bind failed : ' + skinMesh
+                        print(e.message)
+                        print('Error !! Skin bind failed : ' + skinMesh)
                         continue
             else:
                 dstSkinCluster = dstSkinCluster[0]
                 tempSkinNode = skinMesh#親を取得するためスキンクラスタのあるノードを保存しておく
             if self.engine == 'maya':
                 files = os.listdir(self.filePath)
-                print files
+                print(files)
                 if len(files) == 2:
                     for file in files:
                         name, ext = os.path.splitext(file)
@@ -148,9 +148,9 @@ class WeightCopyPaste():
                                              positionTolerance=self.threshold,
                                              path=self.filePath + os.sep)
                     cmds.skinCluster(dstSkinCluster, e=True, forceNormalizeWeights=True)
-                    print 'Weight paste to : ' + str(skinMesh)
+                    print('Weight paste to : ' + str(skinMesh))
                 else:
-                    print 'Not exist seved weight XML file : ' + skinMesh
+                    print('Not exist seved weight XML file : ' + skinMesh)
         # ダミー親削除
         cmds.delete(dummy)
         cmds.select(self.skinMeshes, r=True)
@@ -255,7 +255,7 @@ def transfer_weight(skinMesh, transferedMesh, transferWeight=True, returnInfluen
     # srcSkinCluster = cmds.listConnections(skinMesh+'.inMesh', s=True, d=False)
     if not srcSkinCluster:
         if logTransfer:
-            print skinMesh + massege01
+            print(skinMesh + massege01)
         return False  # スキンクラスタがなかったら関数抜ける
     # スキンクラスタのパラメータ色々を取得しておく
     srcSkinCluster = srcSkinCluster[0]
@@ -297,7 +297,7 @@ def transfer_weight(skinMesh, transferedMesh, transferWeight=True, returnInfluen
                 tsb=True,
             )
             if logTransfer:
-                print massege03 + '[' + skinMesh + '] >>> [' + dst + ']'
+                print(massege03 + '[' + skinMesh + '] >>> [' + dst + ']')
         dstSkinCluster = dstSkinCluster[0]
 
         if transferWeight:
@@ -310,7 +310,7 @@ def transfer_weight(skinMesh, transferedMesh, transferWeight=True, returnInfluen
                 noMirror=True
             )
             if logTransfer:
-                print massege02 + '[' + skinMesh + '] >>> [' + dst + ']'
+                print(massege02 + '[' + skinMesh + '] >>> [' + dst + ']')
         #親子付けを戻す
         common.TemporaryReparent().main(dst,dummyParent=dummy, mode='parent')
         #ダミーペアレントを削除
@@ -380,7 +380,7 @@ def load_joint_label_rules():
                     left_list_list.append(l_list)
                     right_list_list.append(r_list)
             except Exception as e:
-                print e.message
+                print(e.message)
                 left_list_list.append(def_left_list_list[i])
                 right_list_list.append(def_right_list_list[i])
         else:
@@ -430,7 +430,7 @@ def joint_label(object, visibility=False):
                         break
                 if side:
                     break
-            #print 'joint setting :', split_name, side, side_name
+            #print('joint setting :', split_name, side, side_name)
             # 左右のラベルを設定、どちらでもないときは中央
             cmds.setAttr(skinJoint + '.side', side)
             # ラベルタイプを”その他”に設定
@@ -465,9 +465,9 @@ def toggle_mute_skinning():
     for node in objects:
         children = cmds.ls(cmds.listRelatives(node, ad=True, f=True), type ='transform')
         ad_node += [node]+children
-    #print len(ad_node)
+    #print(len(ad_node))
     objects = set(ad_node)
-    #print len(objects)
+    #print(len(objects))
     
     if not objects:
         all_mesh = cmds.confirmDialog(m=msg01, t='', b= [msg02, msg03], db=msg02, cb=msg03, icn='question',ds=msg03)
