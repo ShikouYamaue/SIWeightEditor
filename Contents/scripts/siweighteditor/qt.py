@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 from maya import OpenMayaUI, cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 #PySide2、PySide両対応
@@ -21,13 +22,20 @@ MAYA_VER = int(cmds.about(v=True)[:4])
 MAYA_API_VER = int(cmds.about(api=True))
 
 try:
-    MAYA_WIDNOW = shiboken.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
+    # Python 3対応
+    if sys.version_info[0] == 3:
+        MAYA_WIDNOW = shiboken.wrapInstance(int(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
+    else:
+        MAYA_WIDNOW = shiboken.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
 except:
     MAYA_WIDNOW = None
     
 #MayaWindow単独取得関数
 def get_maya_window():
     try:
+        # Python 3対応
+        if sys.version_info[0] == 3:
+            return shiboken.wrapInstance(int(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
         return shiboken.wrapInstance(long(OpenMayaUI.MQtUtil.mainWindow()), QWidget)
     except:
         return None
