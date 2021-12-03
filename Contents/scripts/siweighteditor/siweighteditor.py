@@ -870,7 +870,7 @@ class WeightEditorWindow(qt.DockWindow):
         space = 0
         show_widget.setMinimumWidth(but_w*5+space)
         show_widget.setMaximumWidth(but_w*5+space)
-        show_widget.setMaximumHeight(WIDGET_HEIGHT)
+        show_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         tip = lang.Lang(en='Show only selected cells', ja=u'選択セルのみ表示').output()
         self.show_but = qt.make_flat_btton(name='Show', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
@@ -912,7 +912,7 @@ class WeightEditorWindow(qt.DockWindow):
         space = 5
         show_bad_widget.setMinimumWidth(but_w*4+space)
         show_bad_widget.setMaximumWidth(but_w*4+space)
-        show_bad_widget.setMaximumHeight(WIDGET_HEIGHT)
+        show_bad_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         tip = lang.Lang(en='Focus on the vertex of an incorrect weight value',  ja=u'不正なウェイト値の頂点にフォーカスする').output()
         self.show_bad_but = qt.make_flat_btton(name='Show Bad', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=False, destroy_flag=True, tip=tip)
@@ -985,7 +985,7 @@ class WeightEditorWindow(qt.DockWindow):
         
         icon_widget.setMinimumWidth(wid_a+wid_b)
         icon_widget.setMaximumWidth(wid_a+wid_b)
-        icon_widget.setMaximumHeight(WIDGET_HEIGHT)
+        icon_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         
         icon_layout.addWidget(self.lock_but)
         icon_layout.addWidget(self.cycle_but)
@@ -1004,9 +1004,9 @@ class WeightEditorWindow(qt.DockWindow):
         but_w = 84
         spin_w = 24
         space = 6
-        enforce_widget.setMinimumWidth(but_w*3+spin_w*3+space)
-        enforce_widget.setMaximumWidth(but_w*3+spin_w*3+space)
-        enforce_widget.setMaximumHeight(WIDGET_HEIGHT)
+        enforce_widget.setMinimumWidth(but_w*3+spin_w*3+space+5)
+        enforce_widget.setMaximumWidth(but_w*3+spin_w*3+space+5)
+        enforce_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         tip = lang.Lang(en='Enforce the limit on the number of deformers that can affect a given vertex\n* Apply to all vertices by executing without selecting a cell', 
                         ja=u'指定された頂点に影響を与えるデフォーマの数に制限を設定\n※セルを選択せずに実行で全頂点に適用').output()
         self.enforce_but = qt.make_flat_btton(name='Enforce Limit', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
@@ -1085,9 +1085,9 @@ class WeightEditorWindow(qt.DockWindow):
         but_w = 22
         j_hl_w = 75
         space = 8
-        sel_joint_widget.setMinimumWidth(but_w*4+j_hl_w+space)
-        sel_joint_widget.setMaximumWidth(but_w*4+j_hl_w+space)
-        sel_joint_widget.setMaximumHeight(WIDGET_HEIGHT)
+        sel_joint_widget.setMinimumWidth(but_w*4+j_hl_w+space+5)
+        sel_joint_widget.setMaximumWidth(but_w*4+j_hl_w+space+5)
+        sel_joint_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         self.sel_joint_but_group = QButtonGroup()
         tip = lang.Lang(en='Do not change the tool when selecting the joint by right clicking on the header', 
                             ja=u'ヘッダー右クリックでジョイント選択するときにツール変更しない').output()
@@ -1153,7 +1153,7 @@ class WeightEditorWindow(qt.DockWindow):
         size =210
         sub_tool0_widget.setMinimumWidth(size)
         sub_tool0_widget.setMaximumWidth(size)
-        sub_tool0_widget.setMaximumHeight(WIDGET_HEIGHT)
+        sub_tool0_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         
         #サブツール類のレイアウト
         #label = QLabel('Sub Tools :')
@@ -1269,7 +1269,7 @@ class WeightEditorWindow(qt.DockWindow):
             size = 190 + 44
         sub_tool1_widget.setMinimumWidth(size)
         sub_tool1_widget.setMaximumWidth(size)
-        sub_tool1_widget.setMaximumHeight(WIDGET_HEIGHT)
+        sub_tool1_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         #ウェイトコピー
         tip = lang.Lang(en='*Simple_Weight_Copy\n\nCopy the mesh weight \nWrite it out externally as a temporary file', 
                             ja=u'・Simple_Weight_Copy\n\nメッシュのウェイトをコピーします\n一時ファイルとして外部に書き出し').output()
@@ -1377,7 +1377,7 @@ class WeightEditorWindow(qt.DockWindow):
         size = 230
         sub_tool2_widget.setMinimumWidth(size)
         sub_tool2_widget.setMaximumWidth(size)
-        sub_tool2_widget.setMaximumHeight(WIDGET_HEIGHT)
+        sub_tool2_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         #ウェイトシンメトリ
         tip = lang.Lang(en='*Weight_Symmetrize\n\n'+\
                             'Mirror weights of selected objects and components\n'+\
@@ -1536,7 +1536,7 @@ class WeightEditorWindow(qt.DockWindow):
         length = but_w * 3 + norm_w * 2 + space 
         mode_widget.setMinimumWidth(length)
         mode_widget.setMaximumWidth(length)
-        mode_widget.setMaximumHeight(WIDGET_HEIGHT)
+        mode_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         #mode_widget.setMaximumHeight(test_height)
         
         self.mode_but_group = QButtonGroup()
@@ -1590,7 +1590,7 @@ class WeightEditorWindow(qt.DockWindow):
         length = but_w * 3 + norm_w * 2 + space 
         static_input_widget.setMinimumWidth(length)
         static_input_widget.setMaximumWidth(length)
-        static_input_widget.setMaximumHeight(WIDGET_HEIGHT)
+        static_input_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         #static_input_widget.setMaximumHeight(test_height)
         
         #固定値ボタン
@@ -1642,7 +1642,7 @@ class WeightEditorWindow(qt.DockWindow):
         space = 6
         lock_widget.setMinimumWidth(but_w*3+space)
         lock_widget.setMaximumWidth(but_w*3+space)
-        lock_widget.setMaximumHeight(WIDGET_HEIGHT)
+        lock_widget.setMaximumHeight(WIDGET_HEIGHT+5)
         tip = lang.Lang(en='Lock selected weights\nRight click to lock influence of all vertices', 
                                 ja=u'選択ウェイトのロック\n右クリックで全頂点のインフルエンスロック').output()
         self.weight_lock_but = qt.make_flat_btton(name='Lock Wt', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
