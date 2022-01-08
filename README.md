@@ -9,6 +9,7 @@ SoftimageにあったWeightEditorをリスペクトして作成したMaya用Skin
 Clone or download > Download ZIP もしくは  
 release > Source code (zip) からZIPファイルをダウンロードしてください。  
 
+### Windows
 解凍したSiWeightEditorフォルダを C:\Program Files\Autodesk\ApplicationPlugins へコピーしてください。  
 ディレクトリ構成などは変更せず解凍フォルダごとそのまま設置します。  
 
@@ -22,6 +23,15 @@ ApplicationPluginsフォルダが存在しない場合は作成してくださ�
 
 動作確認はMaya2015～2018で行っています。  
 
+### Mac
+解凍したSiWeightEditorフォルダを /Users/Shared/Autodesk/ApplicationAddins へコピーしてください。  
+ディレクトリ構成などは変更せず解凍フォルダごとそのまま設置します。  
+
+![image](https://user-images.githubusercontent.com/19793611/148190558-7bac925e-37ce-43c4-b68d-a37d950a4de4.png)
+
+ApplicationAddinsフォルダが存在しない場合は作成してください。  
+
+### 確認
 インストールに成功するとウィンドウ以下に項目が追加されます。  
 
 ![image](https://user-images.githubusercontent.com/28256498/41663300-0ba78a1c-74de-11e8-82b6-fcc5f1435931.png)
