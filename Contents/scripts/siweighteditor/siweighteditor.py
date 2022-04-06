@@ -713,6 +713,7 @@ class WeightEditorWindow(qt.DockWindow):
                     self.under_wt = save_data['under_wt']
                     self.over_wt = save_data['over_wt']
                     self.over_inf = save_data['over_inf']
+                    self.keep_mmi = save_data['keep_mmi']
                     self.max_wt = save_data['max']
                     self.joint_tool = save_data['joint_tool']
                     self.joint_hilite = save_data['joint_hilite']
@@ -751,6 +752,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.over_wt = False
         self.under_wt = False
         self.over_inf = False
+        self.keep_mmi = False
         self.joint_tool = 0
         self.joint_hilite = False
         self.max_wt = 100
@@ -794,6 +796,7 @@ class WeightEditorWindow(qt.DockWindow):
         save_data['under_wt'] = self.under_wt_but.isChecked()
         save_data['over_wt'] = self.over_wt_but.isChecked()
         save_data['over_inf'] = self.over_inf_but.isChecked()
+        save_data['keep_mmi'] = self.keep_mmi_but.isChecked()
         save_data['joint_tool'] = self.joint_tool
         save_data['joint_hilite'] = self.joint_hl_but.isChecked()
         save_data['search_mode'] = self.search_but_group.checkedId()
@@ -925,15 +928,20 @@ class WeightEditorWindow(qt.DockWindow):
         tip = lang.Lang(en='Incorrect display setting: vertices larger than the specified influence number',  ja=u'不正表示設定 ： 指定インフルエンス数以上の頂点').output()
         self.over_inf_but = qt.make_flat_btton(name='Influences', bg=self.yellow, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
+        tip = lang.Lang(en='MaintainMaxInfluences check state for skincluster nodes',  ja=u'スキンクラスターノードの maintainMaxInfluences のチェック状態を維持する').output()
+        self.keep_mmi_but = qt.make_flat_btton(name='Keep Mmi', bg=self.yellow, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h,
+                                                                flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
+
         self.show_bad_but.clicked.connect(self.show_bad_rows)
         self.under_wt_but.setChecked(self.under_wt)
         self.over_wt_but.setChecked(self.over_wt)
         self.over_inf_but.setChecked(self.over_inf)
+        self.keep_mmi_but.setChecked(self.keep_mmi)
         show_bad_layout.addWidget(self.show_bad_but)
         show_bad_layout.addWidget(self.under_wt_but)
         show_bad_layout.addWidget(self.over_wt_but)
         show_bad_layout.addWidget(self.over_inf_but)
-        
+        show_bad_layout.addWidget(self.keep_mmi_but)
         #アイコンボタン群-----------------------------------------------------------------------------------------------------------
         icon_widget = QWidget()
         #qt.change_widget_color(icon_widget, bgColor=[255])
@@ -2257,9 +2265,15 @@ class WeightEditorWindow(qt.DockWindow):
             cmds.select(mesh_vertices, r=True)
             skin_cluster = self.all_skin_clusters[node]
             try:
+                if self.keep_mmi_but.isChecked():
+                    mmi = cmds.getAttr(skin_cluster + '.maintainMaxInfluences')
+
                 cmds.skinCluster(skin_cluster, e=True, sw=sw, swi=swi, omi=omi)
                 if nrm:
                     cmds.skinCluster(skin_cluster, e=True, fnw=True)
+
+                if self.keep_mmi_but.isChecked():
+                    cmds.setAttr(skin_cluster + '.maintainMaxInfluences', mmi)
             except:
                 pass
         self.hilite_flag = True
