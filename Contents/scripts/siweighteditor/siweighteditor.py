@@ -929,7 +929,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.over_inf_but = qt.make_flat_btton(name='Influences', bg=self.yellow, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h, 
                                                                 flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
         tip = lang.Lang(en='MaintainMaxInfluences check state for skincluster nodes',  ja=u'スキンクラスターノードの maintainMaxInfluences のチェック状態を維持する').output()
-        self.keep_mmi_but = qt.make_flat_btton(name='Keep Mmi', bg=self.yellow, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h,
+        self.keep_mmi_but = qt.make_flat_btton(name='Keep Mmi', bg=self.hilite, border_col=180, w_max=but_w, w_min=but_w, h_max=but_h, h_min=but_h,
                                                                 flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
 
         self.show_bad_but.clicked.connect(self.show_bad_rows)
