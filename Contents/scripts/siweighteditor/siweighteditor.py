@@ -3419,7 +3419,9 @@ class WeightEditorWindow(qt.DockWindow):
         selected_item = self.sel_model.currentIndex()
         if not selected_item:
             return
-        self.sel_columns = [id for id in range(column_count) if self.sel_model.columnIntersectsSelection(id, selected_item)]
+        # Note: Since Qt 5.15, the default argument for parent is an empty model index.
+        # https://doc.qt.io/qt-5/qitemselectionmodel.html#columnIntersectsSelection
+        self.sel_columns = [id for id in range(column_count) if self.sel_model.columnIntersectsSelection(id, QModelIndex() if MAYA_VER >= 2022 else selected_item)]
         for i, influence in enumerate(self.all_influences):
             try:
                 if i in self.sel_columns:
