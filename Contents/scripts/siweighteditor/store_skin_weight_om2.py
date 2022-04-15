@@ -37,7 +37,7 @@ class StoreSkinWeight():
                 meshDag, component = iter.getComponent() 
                 #print('get dag node :', meshDag.fullPathName(), component)
             except Exception as e:#2016ではノード出したばかりの状態でシェイプがなぜか帰ってくるのでエラー回避
-                print('get current vtx error :', e.message)
+                print('get current vtx error :', '{}'.format(e))
                 iter.next()
                 continue
                 
@@ -91,7 +91,7 @@ class StoreSkinWeight():
                 #print('get dag node :', meshDag.fullPathName())
             except Exception as e:#2016ではノード出したばかりの状態でシェイプがなぜか帰ってくるのでエラー回避
                 #iter.next()
-                print('get dag path error1 :', e.message)
+                print('get dag path error1 :', '{}'.format(e))
                 iter.next()
                 continue
             mesh_path_name = meshDag.fullPathName()
@@ -128,7 +128,7 @@ class StoreSkinWeight():
                 #print('get dag node :', meshDag.fullPathName(), component)
             except Exception as e:#2016ではノード出したばかりの状態でシェイプがなぜか帰ってくるのでエラー回避
                 #iter.next()
-                print('get dag path error2 :', e.message)
+                print('get dag path error2 :', '{}'.format(e))
                 continue
             
             skinFn, vtxArray, skinName = self.adust_to_vertex_list(meshDag, component)
@@ -261,7 +261,7 @@ class StoreSkinWeight():
                 #print('get weight :',meshPath , vertexComp , weights , infCountPtr)
                 weights = skinFn.getWeights( meshPath , vertexComp)
             except Exception as e:
-                print('get skin weight error :', e.message)
+                print('get skin weight error :', '{}'.format(e))
                 continue
             #print('check weight data type :', type(weights))
             #print("getWeights :", weights)

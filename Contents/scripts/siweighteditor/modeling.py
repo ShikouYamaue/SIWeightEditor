@@ -100,7 +100,7 @@ class ClusterCopy():
                 print(weights)
             #値が取れないときアンドゥするとなぜか直ることがある
             except Exception as e:
-                print(e.message)
+                print('{}'.format(e))
                 cmds.delete(cls)
                 cmds.undo()
                 set_node = cmds.ls(cmds.listHistory(cls, f=True), type='objectSet', l=True)[0]

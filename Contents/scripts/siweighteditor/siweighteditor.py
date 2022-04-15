@@ -93,7 +93,7 @@ def load_plugin():
             cmds.loadPlugin('bake_skin_weight.py', qt=True)
             cmds.pluginInfo('bake_skin_weight.py', e=True, autoload=True)
     except Exception as e:
-        'load plugin error :', e.message
+        'load plugin error :', '{}'.format(e)
     #ツールチップもついでに有効か
     cmds.help(popupMode=True)
 
@@ -518,7 +518,7 @@ class TableModel(QAbstractTableModel):
                 #指定桁数にまとめる、formatで自動的に桁数そろえてくれるみたい
                 return FLOAT_FORMAT.format(weight)
             except Exception as e:
-                #print(e.message)
+                #print('{}'.format(e))
                 return None
         elif role == Qt.BackgroundRole:#バックグラウンドロールなら色変更する
             if row in self.mesh_rows:
@@ -651,7 +651,7 @@ class OptionWindow():
             WINDOW.closeEvent(None)
             WINDOW.close()
         except Exception as e:
-            #print('window close error :', e.message)
+            #print('window close error :', '{}'.format(e))
             pass
         WINDOW = WeightEditorWindow()
         WINDOW.init_flag=False
@@ -2526,7 +2526,7 @@ class WeightEditorWindow(qt.DockWindow):
                 try:
                     cmds.deleteAttr(skin_cluster+'.'+self.lock_attr_name)
                 except Exception as e:
-                    print('clear lock error :', skin_cluster, e.message)
+                    print('clear lock error :', skin_cluster, '{}'.format(e))
                     pass
             else:
                 cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, 
@@ -2694,7 +2694,7 @@ class WeightEditorWindow(qt.DockWindow):
                     try:
                         cmds.deleteAttr(skin_cluster+'.'+self.lock_attr_name)
                     except Exception as e:
-                        print('clear lock error :', skin_cluster, e.message)
+                        print('clear lock error :', skin_cluster, '{}'.format(e))
                         pass
                 else:
                     cmds.setAttr(skin_cluster+'.'+self.lock_attr_name, type='stringArray', *([len(new_lock_data_list)] + new_lock_data_list) )
@@ -2723,7 +2723,7 @@ class WeightEditorWindow(qt.DockWindow):
                         lock_data_dict[int(split_lock_data[0])] = lock_inf_str.split(',')
             return lock_data_dict
         except Exception as e:#読み込み失敗したらクリアする
-            print('decode locke data error :', e.message)
+            print('decode locke data error :', '{}'.format(e))
             return {}
                 
     #ロック状態のクリア
@@ -2738,7 +2738,7 @@ class WeightEditorWindow(qt.DockWindow):
                 try:
                     cmds.deleteAttr(skin_cluster+'.'+self.lock_attr_name)
                 except Exception as e:
-                    print('clear lock error :', skin_cluster, e.message)
+                    print('clear lock error :', skin_cluster, '{}'.format(e))
                     pass
             
     #コピペ右クリックメニュー
@@ -2994,7 +2994,7 @@ class WeightEditorWindow(qt.DockWindow):
             if cmds.selectMode(q=True, co=True) and not self.focus_but.isChecked():
                 return
         except Exception as e:
-            #print(e.message)
+            #print('{}'.format(e))
             #print('UI Allready Closed :')
             return
         if self.hilite_flag:
@@ -3246,7 +3246,7 @@ class WeightEditorWindow(qt.DockWindow):
                 try:
                     self.vtx_lock_data_dict[vtx_name].add(node_influence_id_dict[influence])
                 except Exception as e:
-                    print('lock setting error :', e.message)
+                    print('lock setting error :', '{}'.format(e))
                     pass
                    
         try:#都度メモリをきれいに
@@ -3254,19 +3254,19 @@ class WeightEditorWindow(qt.DockWindow):
             self.weight_model._data = {}
         except Exception as e:
             pass
-            #print(e.message, 'in get set' )
+            #print('{}'.format(e), 'in get set' )
         try:#都度メモリをきれいに
             self.weight_model.deleteLater()
             del self.weight_model
         except Exception as e:
             pass
-            #print(e.message, 'in get set' )
+            #print('{}'.format(e), 'in get set' )
         try:
             self.sel_model.deleteLater()
             del self.sel_model
         except Exception as e:
             pass
-            #print(e.message, 'in get set' )
+            #print('{}'.format(e), 'in get set' )
         try:
             self.weight_model = TableModel(self._data, self.view_widget, self.mesh_rows, 
                                             self.all_influences, self.v_header_list, self.inf_color_list)
@@ -3459,7 +3459,7 @@ class WeightEditorWindow(qt.DockWindow):
                 if MAYA_VER >= 2016:
                     cmds.setAttr(influence + '.overrideEnabled', 0)
             except Exception as e:
-                #print(e.message)
+                #print('{}'.format(e))
                 self.set_message(msg='- Joint Hilite Error : Override attr still locked -', error=True)
                 pass
         cmds.undoInfo(swf=True)#ヒストリを再度有効か
@@ -3485,7 +3485,7 @@ class WeightEditorWindow(qt.DockWindow):
             try:#オーバーライド設定を戻す
                 cmds.setAttr(influence + '.overrideEnabled', self.joint_override_dict[influence])
             except Exception as e:
-                #print(e.message)
+                #print('{}'.format(e))
                 self.set_message(msg='- Joint Unhilite Error : Override attr still locked -', error=True)
                 pass
             if MAYA_VER <= 2015:#2015以下はオーバーライドカラー設定も戻す
@@ -4028,7 +4028,7 @@ class WeightEditorWindow(qt.DockWindow):
             self.om_bake_skin_weight(realbake=True, ignoreundo=self.change_flag)
         except Exception as e:
             try:
-                print('Bake Skin Weight Failure :', e.message)
+                print('Bake Skin Weight Failure :', '{}'.format(e))
                 #プラグインをリロードしてリトライする
                 cmds.loadPlugin('bake_skin_weight.py', qt=True)
                 cmds.pluginInfo('bake_skin_weight.py', e=True, autoload=True)
@@ -4132,25 +4132,25 @@ class WeightEditorWindow(qt.DockWindow):
             del self.weight_model._data#一番でかいっぽい
             self.weight_model._data = {}
         except Exception as e:
-            #print(e.message, 'in close')
+            #print('{}'.format(e), 'in close')
             pass
         try:
             self.weight_model.deleteLater()
             del self.weight_model
         except Exception as e:
-            #print(e.message, 'in close')
+            #print('{}'.format(e), 'in close')
             pass
         try:
             self.sel_model.deleteLater()
             del self.sel_model
         except Exception as e:
-            #print(e.message, 'in close')
+            #print('{}'.format(e), 'in close')
             pass
         try:
             self.view_widget.deleteLater()
             del self.view_widget
         except Exception as e:
-            #print(e.message, 'in close')
+            #print('{}'.format(e), 'in close')
             pass
         
         try:
@@ -4181,7 +4181,7 @@ class WeightEditorWindow(qt.DockWindow):
             del self.vtx_weight_dict
             del self.lock_data_dict
         except Exception as e:
-            #print(e.message, 'in close')
+            #print('{}'.format(e), 'in close')
             pass
         #print('erase func data :')
             
@@ -4277,7 +4277,7 @@ def Option(x=None, y=None):
     try:
         cmds.deleteUI(TITLE+'WorkspaceControl')
     except Exception as e:
-        #print('delete ui failed :', e.message)
+        #print('delete ui failed :', '{}'.format(e))
         pass
         
     if not save_data['dockable']:
