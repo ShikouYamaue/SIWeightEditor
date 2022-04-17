@@ -388,3 +388,13 @@ UI上の選択からスキンに対してインフルエンスの追加削除が
 ![siweighteditor9](https://user-images.githubusercontent.com/28256498/41662504-47b089fc-74dc-11e8-9bd5-aa5294c20491.gif)
 
 
+
+## 「最大インフルエンスの保持」アトリビュートの保持オプション
+
+
+![97ccfc1b80774e31c0b06c305cf0a4df471b9d444243764eb47a14e1d91074ce](https://user-images.githubusercontent.com/49356195/163508929-602aa800-8dc0-48fb-882f-af919d92172a.png)
+
+
+SIWE内のハンマー機能を使用した際、処理対象のSkinClusterの最大インフルエンス数の保持アトリビュートがFalseでも強制的にTrueになってしまうため、ハンマー処理前のフラグの状態を処理後に保持するオプション。
+
+ウェイト調整中は制限をかけず、最後に最大インフルエンス数に丸める派の人向けの機能。
