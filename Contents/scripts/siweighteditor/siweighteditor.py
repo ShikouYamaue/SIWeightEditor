@@ -720,6 +720,7 @@ class WeightEditorWindow(qt.DockWindow):
                     self.search_mode = save_data['search_mode']
                     self.darken_value = save_data['darken_value']
                     self.interactive = save_data['interactive']
+                    self.scriptjob = save_data['scriptjob']
                     self.dockable = save_data['dockable']
                     self.floating = save_data['floating']
                     self.area=save_data['area']
@@ -759,11 +760,13 @@ class WeightEditorWindow(qt.DockWindow):
         self.search_mode = 0
         self.darken_value = 150
         self.interactive = False
+        self.scriptjob = True
         self.dockable = False
         self.floating = True
         self.area = None
         self.smooth_parcent = 25
         save_data = {}
+        save_data['scriptjob'] = True
         save_data['dockable'] = False
         return save_data
         
@@ -802,6 +805,7 @@ class WeightEditorWindow(qt.DockWindow):
         save_data['search_mode'] = self.search_but_group.checkedId()
         save_data['darken_value'] = self.zero_darken.value()
         save_data['interactive'] = self.interactive_but.isChecked()
+        save_data['scriptjob'] = self.scriptjob_but.isChecked()
         save_data['dockable'] = self.docking_but.isChecked()
         save_data['floating'] = self.isFloating()
         save_data['area'] = self.dockArea()
@@ -1807,6 +1811,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.zero_darken.setMinimumWidth(35)
         msg_layout.addWidget(self.zero_darken)
         
+        
         but_w = 80
         tip = lang.Lang(en='Change whether dockable to Maya UI',  
                                 ja=u'Maya UIにドッキング可能かどうかを変更する').output()
@@ -1843,7 +1848,24 @@ class WeightEditorWindow(qt.DockWindow):
         msg_layout.addWidget(self.time_label)
         
         msg_layout.addWidget(qt.make_v_line())
-        
+
+        but_w = 65
+        tip = lang.Lang(en='Run Script Job', ja=u'スクリプトジョブのON/OFF').output()
+        self.scriptjob_but = qt.make_flat_btton(name='', bg=self.orange, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=True, destroy_flag=True, icon=self.icon_path+'power-off.png', tip=tip)
+        self.scriptjob_but.clicked.connect(self.switch_scriptjob)
+        self.scriptjob_but.setChecked(self.scriptjob)
+        msg_layout.addWidget(self.scriptjob_but)
+
+        self.scriptjob_label = QLabel('run')
+        self.scriptjob_label.setMaximumWidth(160)
+        self.scriptjob_label.setMinimumWidth(160)
+        msg_layout.addWidget(self.scriptjob_label)
+
+        self.update_scriptjob_state()
+
+        msg_layout.addWidget(qt.make_v_line())
+
         #ウェイトエディタからの通知
         self.msg_label = QLabel('')
         msg_layout.addWidget(self.msg_label)
@@ -1880,7 +1902,36 @@ class WeightEditorWindow(qt.DockWindow):
                 self.ctrl_isPressed = False
             self.change_static_text(reserve_mod=True)
         return False
+    
+    
+    def switch_scriptjob(self):
+        
+        self.scriptjob = self.scriptjob_but.isChecked()
+        if self.scriptjob:
+            self.create_job()
+        else:
+            self.remove_job()
+        
+        self.update_scriptjob_state()
             
+    def update_scriptjob_state(self):
+        if self.scriptjob:
+            text = lang.Lang(en='List is being updated.', 
+                        ja=u'リスト更新中').output()
+            self.scriptjob_label.setText(text)
+            qt.change_button_color(self.scriptjob_but, bgColor=[93, 159, 119], mode='button', destroy=True, dsColor=180)
+            # self.scriptjob_but.palette().setColor(QPalette.Background, QColor(143, 119, 181))
+        else:
+            text = lang.Lang(en='List update is stopped.', 
+                        ja=u'リスト更新停止中').output()
+            self.scriptjob_label.setText(text)
+            # self.scriptjob_but.palette().setColor(QPalette.Background, QColor(247, 194, 66))
+            qt.change_button_color(self.scriptjob_but, bgColor=[194, 104, 95], mode='button', destroy=True, dsColor=180)
+
+        # self.lock_col = [180, 60, 60]
+        # self.red = [150, 60, 60]
+        # self.orange = [150,96,32]
+    
     #MayaUIにドッキングかのうかどうかを変更
     def change_dockable(self):
         if MAYA_VER <= 2016:
@@ -4253,6 +4304,8 @@ def make_ui():
     get_ui(TITLE, 'WeightEditorWindow')
 
     app = QApplication.instance()
+    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"]="1"
+    QGuiApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     ui = WeightEditorWindow()
     return ui
    
@@ -4300,6 +4353,7 @@ def Option(x=None, y=None):
     
     # 保存されたデータのウインドウ位置を使うとウインドウのバーが考慮されてないのでズレる
     opts = {
+        "scriptjob":  save_data['scriptjob'],
         "dockable":  save_data['dockable'],
         "floating": True,
         "area": None,
