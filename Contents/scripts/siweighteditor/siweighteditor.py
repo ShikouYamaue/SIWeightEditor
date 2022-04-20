@@ -1920,12 +1920,12 @@ class WeightEditorWindow(qt.DockWindow):
     def update_scriptjob_state(self):
         if self.scriptjob:
             self.scriptjob_but.setText("Live Updating")
-            tip = lang.Lang(en='Live update of the waitlist is enabled.', ja=u'ウェイトリストのライブアップデートが有効です。').output()
+            tip = lang.Lang(en='Enable loading of weights', ja=u'ウェイトリストの更新が有効です。').output()
             self.scriptjob_but.setToolTip(tip)
             qt.change_button_color(self.scriptjob_but, textColor=60, bgColor=self.higreen, mode='button', destroy=True, dsColor=180)
         else:
             self.scriptjob_but.setText("Update Paused")
-            tip = lang.Lang(en='Live update of the waitlist is disabled.', ja=u'ウェイトリストのライブアップデートが無効になっています。').output()
+            tip = lang.Lang(en='Disable loading of weights', ja=u'ウェイトリストの更新が無効です。').output()
             self.scriptjob_but.setToolTip(tip)
             qt.change_button_color(self.scriptjob_but, textColor=60, bgColor=self.hired, mode='button', destroy=True, dsColor=180)
         
