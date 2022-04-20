@@ -864,6 +864,8 @@ class WeightEditorWindow(qt.DockWindow):
         self.red = [150, 60, 60]
         self.orange = [150,96,32]
         self.yellow = [150,125,20]
+        self.higreen = [95, 237, 152]
+        self.hired = [237, 103, 95]
         but_h = BUTTON_HEIGHT
         
         #表示ボタンをはめる-----------------------------------------------------------------------------------------------------------
@@ -1266,7 +1268,7 @@ class WeightEditorWindow(qt.DockWindow):
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'freeze_m.png', tip=tip)
         self.freeze_m_but.clicked.connect(qt.Callback(self.freeze_m))
         sub_tool0_layout.addWidget(self.freeze_m_but)
-       
+        
         #サブツール群を配置-------------------------------------------------------------------------------------------------------------------------------
         sub_tool1_widget = QWidget()
         #qt.change_widget_color(sub_tool1_widget, bgColor=[255])
@@ -1850,8 +1852,9 @@ class WeightEditorWindow(qt.DockWindow):
         msg_layout.addWidget(qt.make_v_line())
 
         but_w = 65
-        tip = lang.Lang(en='Run Script Job', ja=u'スクリプトジョブのON/OFF').output()
-        self.scriptjob_but = qt.make_flat_btton(name='', bg=self.orange, border_col=180, w_max=BUTTON_HEIGHT, w_min=BUTTON_HEIGHT, h_max=but_h, h_min=but_h, 
+
+        tip = lang.Lang(en='Live Updating', ja=u'リスト更新中').output()
+        self.scriptjob_but = qt.make_flat_btton(name='', bg=self.higreen, border_col=180, w_max=BUTTON_HEIGHT+120, w_min=BUTTON_HEIGHT+120, h_max=but_h, h_min=but_h, 
                                                     flat=True, hover=True, checkable=True, destroy_flag=True, icon=self.icon_path+'power-off.png', tip=tip)
         self.scriptjob_but.clicked.connect(self.switch_scriptjob)
         self.scriptjob_but.setChecked(self.scriptjob)
@@ -1860,7 +1863,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.scriptjob_label = QLabel('run')
         self.scriptjob_label.setMaximumWidth(160)
         self.scriptjob_label.setMinimumWidth(160)
-        msg_layout.addWidget(self.scriptjob_label)
+        # msg_layout.addWidget(self.scriptjob_label)
 
         self.update_scriptjob_state()
 
@@ -1916,18 +1919,20 @@ class WeightEditorWindow(qt.DockWindow):
             
     def update_scriptjob_state(self):
         if self.scriptjob:
-            text = lang.Lang(en='List is being updated.', 
-                        ja=u'リスト更新中').output()
-            self.scriptjob_label.setText(text)
-            qt.change_button_color(self.scriptjob_but, bgColor=[93, 159, 119], mode='button', destroy=True, dsColor=180)
-            # self.scriptjob_but.palette().setColor(QPalette.Background, QColor(143, 119, 181))
+            self.scriptjob_but.setText("Live Updating")
+            tip = lang.Lang(en='Live update of the waitlist is enabled.', ja=u'ウェイトリストのライブアップデートが有効です。').output()
+            self.scriptjob_but.setToolTip(tip)
+            qt.change_button_color(self.scriptjob_but, textColor=60, bgColor=self.higreen, mode='button', destroy=True, dsColor=180)
         else:
-            text = lang.Lang(en='List update is stopped.', 
-                        ja=u'リスト更新停止中').output()
-            self.scriptjob_label.setText(text)
-            # self.scriptjob_but.palette().setColor(QPalette.Background, QColor(247, 194, 66))
-            qt.change_button_color(self.scriptjob_but, bgColor=[194, 104, 95], mode='button', destroy=True, dsColor=180)
-
+            self.scriptjob_but.setText("Update Paused")
+            tip = lang.Lang(en='Live update of the waitlist is disabled.', ja=u'ウェイトリストのライブアップデートが無効になっています。').output()
+            self.scriptjob_but.setToolTip(tip)
+            qt.change_button_color(self.scriptjob_but, textColor=60, bgColor=self.hired, mode='button', destroy=True, dsColor=180)
+        
+        styleSheet = self.scriptjob_but.styleSheet()
+        if not "text-align:left" in styleSheet:
+            self.scriptjob_but.setStyleSheet(styleSheet.replace("QPushButton{", "QPushButton{text-align:left;"))
+        
         # self.lock_col = [180, 60, 60]
         # self.red = [150, 60, 60]
         # self.orange = [150,96,32]
@@ -2989,7 +2994,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list, loop=0, layout=self.unique_layout)
         self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list3, loop=0, layout=self.unique_layout3)
         self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list2, loop=0, layout=self.unique_layout2)
-       
+        
         
     pre_row_count = 0
     def re_arrangement_but(self, win_x, grid_v, but_list, loop, layout):
@@ -3299,7 +3304,7 @@ class WeightEditorWindow(qt.DockWindow):
                 except Exception as e:
                     print('lock setting error :', e.message)
                     pass
-                   
+        
         try:#都度メモリをきれいに
             del self.weight_model._data
             self.weight_model._data = {}
@@ -3401,7 +3406,7 @@ class WeightEditorWindow(qt.DockWindow):
         cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
         
         self.counter.reset()
-         
+        
         vertices = []
         row_count =  self.weight_model.rowCount()
         selected_item = self.sel_model.currentIndex()
@@ -4308,7 +4313,7 @@ def make_ui():
     QGuiApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     ui = WeightEditorWindow()
     return ui
-   
+    
 def Option(x=None, y=None):
     #print('si weight editor : Option')
     global WINDOW
