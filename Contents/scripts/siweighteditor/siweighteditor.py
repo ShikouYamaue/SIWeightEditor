@@ -21,6 +21,7 @@ import re
 import os
 import locale
 import json
+import sys
 import webbrowser
 from imp import reload
 
@@ -56,7 +57,11 @@ if MAYA_VER >= 2016:
 else:
     from . import store_skin_weight
 
-VERSION = 'r1.4.3'
+PYTHON_VER = sys.version_info.major
+if PYTHON_VER >= 3:
+    round = common.round_half_up
+
+VERSION = 'r1.4.2'
 
 TITLE = "SIWeightEditor"
     
@@ -720,6 +725,7 @@ class WeightEditorWindow(qt.DockWindow):
                     self.search_mode = save_data['search_mode']
                     self.darken_value = save_data['darken_value']
                     self.interactive = save_data['interactive']
+                    self.scriptjob = save_data['scriptjob']
                     self.dockable = save_data['dockable']
                     self.floating = save_data['floating']
                     self.area=save_data['area']
@@ -759,11 +765,13 @@ class WeightEditorWindow(qt.DockWindow):
         self.search_mode = 0
         self.darken_value = 150
         self.interactive = False
+        self.scriptjob = True
         self.dockable = False
         self.floating = True
         self.area = None
         self.smooth_parcent = 25
         save_data = {}
+        save_data['scriptjob'] = True
         save_data['dockable'] = False
         return save_data
         
@@ -802,6 +810,7 @@ class WeightEditorWindow(qt.DockWindow):
         save_data['search_mode'] = self.search_but_group.checkedId()
         save_data['darken_value'] = self.zero_darken.value()
         save_data['interactive'] = self.interactive_but.isChecked()
+        save_data['scriptjob'] = self.scriptjob_but.isChecked()
         save_data['dockable'] = self.docking_but.isChecked()
         save_data['floating'] = self.isFloating()
         save_data['area'] = self.dockArea()
@@ -860,6 +869,8 @@ class WeightEditorWindow(qt.DockWindow):
         self.red = [150, 60, 60]
         self.orange = [150,96,32]
         self.yellow = [150,125,20]
+        self.higreen = [95, 237, 152]
+        self.hired = [237, 103, 95]
         but_h = BUTTON_HEIGHT
         
         #表示ボタンをはめる-----------------------------------------------------------------------------------------------------------
@@ -1262,7 +1273,7 @@ class WeightEditorWindow(qt.DockWindow):
                                                     flat=True, hover=True, checkable=False, destroy_flag=True, icon=self.icon_path+'freeze_m.png', tip=tip)
         self.freeze_m_but.clicked.connect(qt.Callback(self.freeze_m))
         sub_tool0_layout.addWidget(self.freeze_m_but)
-       
+        
         #サブツール群を配置-------------------------------------------------------------------------------------------------------------------------------
         sub_tool1_widget = QWidget()
         #qt.change_widget_color(sub_tool1_widget, bgColor=[255])
@@ -1807,6 +1818,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.zero_darken.setMinimumWidth(35)
         msg_layout.addWidget(self.zero_darken)
         
+        
         but_w = 80
         tip = lang.Lang(en='Change whether dockable to Maya UI',  
                                 ja=u'Maya UIにドッキング可能かどうかを変更する').output()
@@ -1843,7 +1855,25 @@ class WeightEditorWindow(qt.DockWindow):
         msg_layout.addWidget(self.time_label)
         
         msg_layout.addWidget(qt.make_v_line())
-        
+
+        but_w = 65
+
+        tip = lang.Lang(en='Live Updating', ja=u'リスト更新中').output()
+        self.scriptjob_but = qt.make_flat_btton(name='', bg=self.higreen, border_col=180, w_max=BUTTON_HEIGHT+120, w_min=BUTTON_HEIGHT+120, h_max=but_h, h_min=but_h, 
+                                                    flat=True, hover=True, checkable=True, destroy_flag=True, icon=self.icon_path+'power-off.png', tip=tip)
+        self.scriptjob_but.clicked.connect(self.switch_scriptjob)
+        self.scriptjob_but.setChecked(self.scriptjob)
+        msg_layout.addWidget(self.scriptjob_but)
+
+        self.scriptjob_label = QLabel('run')
+        self.scriptjob_label.setMaximumWidth(160)
+        self.scriptjob_label.setMinimumWidth(160)
+        # msg_layout.addWidget(self.scriptjob_label)
+
+        self.update_scriptjob_state()
+
+        msg_layout.addWidget(qt.make_v_line())
+
         #ウェイトエディタからの通知
         self.msg_label = QLabel('')
         msg_layout.addWidget(self.msg_label)
@@ -1880,7 +1910,38 @@ class WeightEditorWindow(qt.DockWindow):
                 self.ctrl_isPressed = False
             self.change_static_text(reserve_mod=True)
         return False
+    
+    
+    def switch_scriptjob(self):
+        
+        self.scriptjob = self.scriptjob_but.isChecked()
+        if self.scriptjob:
+            self.create_job()
+        else:
+            self.remove_job()
+        
+        self.update_scriptjob_state()
             
+    def update_scriptjob_state(self):
+        if self.scriptjob:
+            self.scriptjob_but.setText("Live Updating")
+            tip = lang.Lang(en='Enable loading of weights', ja=u'ウェイトリストの更新が有効です。').output()
+            self.scriptjob_but.setToolTip(tip)
+            qt.change_button_color(self.scriptjob_but, textColor=60, bgColor=self.higreen, mode='button', destroy=True, dsColor=180)
+        else:
+            self.scriptjob_but.setText("Update Paused")
+            tip = lang.Lang(en='Disable loading of weights', ja=u'ウェイトリストの更新が無効です。').output()
+            self.scriptjob_but.setToolTip(tip)
+            qt.change_button_color(self.scriptjob_but, textColor=60, bgColor=self.hired, mode='button', destroy=True, dsColor=180)
+        
+        styleSheet = self.scriptjob_but.styleSheet()
+        if not "text-align:left" in styleSheet:
+            self.scriptjob_but.setStyleSheet(styleSheet.replace("QPushButton{", "QPushButton{text-align:left;"))
+        
+        # self.lock_col = [180, 60, 60]
+        # self.red = [150, 60, 60]
+        # self.orange = [150,96,32]
+    
     #MayaUIにドッキングかのうかどうかを変更
     def change_dockable(self):
         if MAYA_VER <= 2016:
@@ -2938,7 +2999,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list, loop=0, layout=self.unique_layout)
         self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list3, loop=0, layout=self.unique_layout3)
         self.re_arrangement_but(win_x=win_x, grid_v=0, but_list=self.but_list2, loop=0, layout=self.unique_layout2)
-       
+        
         
     pre_row_count = 0
     def re_arrangement_but(self, win_x, grid_v, but_list, loop, layout):
@@ -3248,7 +3309,7 @@ class WeightEditorWindow(qt.DockWindow):
                 except Exception as e:
                     print('lock setting error :', '{}'.format(e))
                     pass
-                   
+        
         try:#都度メモリをきれいに
             del self.weight_model._data
             self.weight_model._data = {}
@@ -3350,7 +3411,7 @@ class WeightEditorWindow(qt.DockWindow):
         cmds.undoInfo(swf=False)#不要なヒストリを残さないようにオフる
         
         self.counter.reset()
-         
+        
         vertices = []
         row_count =  self.weight_model.rowCount()
         selected_item = self.sel_model.currentIndex()
@@ -3855,7 +3916,7 @@ class WeightEditorWindow(qt.DockWindow):
             #桁数丸めを実行
             elif round_digit is not None:
                 pre_round_sum = round(sum(new_weight), 10)
-                round_weight = map(lambda w:round(w, round_digit), new_weight)
+                round_weight = list(map(lambda w:round(w, round_digit), new_weight))
                 after_round_sum = round(sum(round_weight), 10)
                 sub_value = pre_round_sum - after_round_sum
                 if sub_value == 0.0:
@@ -4018,7 +4079,7 @@ class WeightEditorWindow(qt.DockWindow):
                     self.weight_model.over_weight_rows.remove(row)
                 except:
                     pass
-            influence_count = all_influences_count - new_weight.count(0.0)
+            influence_count = all_influences_count - list(new_weight).count(0.0)
             self.weight_model.over_influence_limit_dict[row] = influence_count
             
         self.counter.count(string='Weight Calculation :')
@@ -4253,9 +4314,11 @@ def make_ui():
     get_ui(TITLE, 'WeightEditorWindow')
 
     app = QApplication.instance()
+    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"]="1"
+    QGuiApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     ui = WeightEditorWindow()
     return ui
-   
+    
 def Option(x=None, y=None):
     #print('si weight editor : Option')
     global WINDOW
@@ -4300,6 +4363,7 @@ def Option(x=None, y=None):
     
     # 保存されたデータのウインドウ位置を使うとウインドウのバーが考慮されてないのでズレる
     opts = {
+        "scriptjob":  save_data['scriptjob'],
         "dockable":  save_data['dockable'],
         "floating": True,
         "area": None,
