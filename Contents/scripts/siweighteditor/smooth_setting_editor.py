@@ -22,7 +22,7 @@ class Option():
             WINDOW.closeEvent(None)
             WINDOW.close()
         except Exception as e:
-            #print(e.message)
+            #print('{}'.format(e))
             pass
         WINDOW = SubWindow()
         WINDOW.resize(300, 150)
@@ -112,7 +112,7 @@ class SubWindow(qt.SubWindow):
                 with open(self.save_file, 'r') as f:
                     save_data = json.load(f)
             except Exception as e:
-                print(e.message)
+                print('{}'.format(e))
                 save_data = self.save_default()
         else:
             save_data = self.save_default()

@@ -166,7 +166,7 @@ class SubWindow(qt.SubWindow):
                         r_list = save_data.values()
                         self.all_lr_list.append([l_list, r_list])
                 except Exception as e:
-                    print(e.message)
+                    print('{}'.format(e))
                     self.all_lr_list.append(self.def_all_lr_list[i])
             else:
                 self.all_lr_list.append(self.def_all_lr_list[i])
