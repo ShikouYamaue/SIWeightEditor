@@ -194,7 +194,7 @@ class WeightTransferMultiple(qt.SubWindow):
             if len(self.dup_objs) > 1:
                 cmds.delete(self.dup_objs)
         except Exception as e:
-            e.message
+            print('{}'.format(e))
         cmds.delete(self.marged_mesh)
             
         cmds.select(self.transfer_mesh+self.transfer_comp, r=True)

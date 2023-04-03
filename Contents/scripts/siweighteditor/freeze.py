@@ -52,7 +52,7 @@ def main(mesh=None, pop_zero_poly=False):
         try:
             cmds.select(s, add=True)
         except Exception as e:
-            print(e.message)
+            print('{}'.format(e))
     if zero_mesh and pop_zero_poly:
         msg = msg01.output()+str(len(zero_mesh))
         msg += '\n'+msg02.output()

@@ -44,7 +44,7 @@ class LapCounter():
             try:
                 window.time_label.setText('- Calculation Time - '+out_put_time+' sec')
             except Exception as e:
-                e.message
+                print('{}'.format(e))
                 pass
             
         if print_flag:#表示するかどうかをグローバル変数で管理

@@ -2,7 +2,7 @@
 import functools
 import datetime as dt
 import maya.cmds as cmds
-
+from decimal import Decimal, ROUND_HALF_UP
     
 def timer(func):
     """
@@ -173,4 +173,17 @@ class TemporaryReparent():
         for child in dummyChildren:
             if cmds.nodeType(child) in self.node_list:
                 cmds.parent(child, self.node)
-                
+
+
+def round_half_up(number, ndigits=0):
+    '''(function)
+    round(number: SupportsRound) -> int
+    round(number: SupportsRound, ndigits: None) -> int
+
+    round(number: SupportsRound[_T@round], ndigits: SupportsIndex) -> _T@round
+    Round a number to a given precision in decimal digits.
+
+    2系のroundを再現し、挙動の差をなくすためのオーバーライド用のround関数
+    '''
+
+    return float(Decimal(str(number)).quantize(Decimal("0.1")**ndigits, rounding=ROUND_HALF_UP))
