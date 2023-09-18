@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from maya import cmds
 from maya import mel
-import pymel.core as pm
 from . import weight
 from . import common
 from . import lang
@@ -23,7 +22,7 @@ def mesh_weight_symmetrize():
             return
         #print(faces)
         exFace = modeling.face_extraction(faces=faces, deleteOrg=False, selectDuplicated=True, transferWeight=True)
-    selection = pm.ls(sl=True)
+    selection = cmds.ls(sl=True)
     #選択しているものの子供のノードを取得してリスト化
     allNodes = alignmentParentList(selection)
     duplicated = []
@@ -44,7 +43,7 @@ def alignmentParentList(parentList):
     for node in parentList:
         #子のノードを取得※順序がルート→孫→子の順番なので注意、いったんルートなしで取得
         #children = common.get_children(node,type=['transform'], root_includes=False)
-        children = pm.listRelatives(node, ad=True, type='transform', f=True)
+        children = cmds.listRelatives(node, ad=True, type='transform', f=True) or []
         #末尾にルートを追加
         children.append(node)
         #逆順にして親→子→孫順に整列
@@ -56,7 +55,7 @@ def alignmentParentList(parentList):
                 if alignedNode == child:
                     appendedFlag = True
             if appendedFlag is False:
-                alignedList.append(str(child))
+                alignedList.append(child)
     return alignedList
 
 def duplycateSymmetry(object):
@@ -70,18 +69,17 @@ def duplycateSymmetry(object):
     #左右リネーム関数呼び出し
     newName = renameLR(newName)
     #複製して反転
-    duplicated = pm.duplicate(object, name=newName)
+    duplicated = cmds.duplicate(object, name=newName)
     try:
-        parentNode =  duplicated[0].firstParent()#Pymelの機能で親の階層を取得しておく。listRelativesと同じような。
-        parentNode = str(parentNode)#cmdsで使えるように文字列に変換
+        parentNode = cmds.listRelatives(duplicated[0], p=True)[0]
         #左右リネーム関数呼び出し
         newParent = renameLR(parentNode)
     except:
         parentNode = None
         newParent = None
-    duplicated = str(duplicated[0])#cmdsで使えるように文字列に変換
+    duplicated = duplicated[0]
     #子供のオブジェクト取得関数呼び出し
-    children = pm.listRelatives(duplicated, ad=True, type='transform', f=True)
+    children = cmds.listRelatives(duplicated, ad=True, type='transform', f=True) or []
     #子供のオブジェクトがある場合は重複を避けるため削除
     if len(children) != 0:
         cmds.delete(children)

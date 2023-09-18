@@ -9,7 +9,6 @@ import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 import maya.api.OpenMaya as om2
 import maya.api.OpenMayaAnim as oma2
-import pymel.core as pm
 
 from collections import defaultdict
 from collections import OrderedDict

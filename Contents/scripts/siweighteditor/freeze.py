@@ -1,7 +1,6 @@
 #-*-coding:utf-8 -*-
 from maya import mel
 from maya import cmds
-import pymel.core as pm
 import os
 import json
 import datetime as dt
@@ -162,13 +161,11 @@ def freeze():
 def get_shading_engines(root_node=None):
     en_list = []
     if root_node is None:
-        shapes = pm.ls(type="mesh")
+        shapes = cmds.ls(type="mesh")
     else:
-        if isinstance(root_node, (str, unicode)):
-            root_node = pm.PyNode(root_node)
-        shapes = root_node.listRelatives(ad=True, type="mesh")
+        shapes = cmds.listRelatives(root_node, ad=True, type="mesh") or []
     file_nodes = []
     for i in shapes:
-        shading_engines = i.shadingGroups()
+        shading_engines = cmds.listConnections(i, type="shadingEngine") or []
         en_list+=shading_engines
     return list(set(en_list))
