@@ -361,8 +361,7 @@ class MyHeaderView(QHeaderView):
     #現在のセクションがアクティブかどうかを判定する
     def check_section_is_active(self, index):
         sel_model = self.selectionModel()#ビューに設定されている選択モデルを取得する
-        selected_item = sel_model.currentIndex()
-        is_active = sel_model.columnIntersectsSelection(index, selected_item)
+        is_active = sel_model.columnIntersectsSelection(index, QModelIndex())
         #print('header is active :', is_active)
         return is_active
         
