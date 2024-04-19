@@ -3,14 +3,19 @@ from . import qt
 from . import lang
 import os
 import json
-import imp
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
-try:
-    imp.find_module('PySide2')
+
+from .maya_version import MAYA_VER
+
+if MAYA_VER >= 2025:
+    from PySide6.QtWidgets import *
+    from PySide6.QtGui import *
+    from PySide6.QtCore import *
+elif 2017 <= MAYA_VER < 2025:
     from PySide2.QtWidgets import *
     from PySide2.QtGui import *
     from PySide2.QtCore import *
-except ImportError:
+else:
     from PySide.QtGui import *
     from PySide.QtCore import *
     
