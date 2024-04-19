@@ -225,7 +225,10 @@ def change_widget_color(widget,
     #ウィジェットのカラー変更
     palette = QPalette()
     palette.setColor(QPalette.Button, bgColor)
-    palette.setColor(QPalette.Background, bgColor)
+    if MAYA_VER >= 2025:
+        palette.setColor(QPalette.Window, bgColor)
+    else:
+        palette.setColor(QPalette.Background, bgColor)
     palette.setColor(QPalette.Base, baseColor)
     palette.setColor(QPalette.Text, textColor)
     

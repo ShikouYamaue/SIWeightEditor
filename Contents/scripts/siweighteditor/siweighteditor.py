@@ -292,7 +292,7 @@ class MyHeaderView(QHeaderView):
         super(MyHeaderView, self).__init__(Qt.Horizontal, parent)
         self._font = QFont("helvetica", 9)
         self._actived_font = QFont("helvetica", 9)
-        self._actived_font.setWeight(63)#太くする
+        self._actived_font.setWeight(QFont.DemiBold)#太くする
         self._metrics = QFontMetrics(self._font)
         self._descent = self._metrics.descent()
         self._margin = 5
@@ -387,7 +387,10 @@ class MyHeaderView(QHeaderView):
     def _get_text_width(self):
         if self.model() is None:
             return 0
-        width_list = [self._metrics.width(self._get_data(i)) for i in range(0, self.model().columnCount())] or [0]
+        if MAYA_VER >= 2025:
+            width_list = [self._metrics.horizontalAdvance(self._get_data(i)) for i in range(0, self.model().columnCount())] or [0]
+        else:
+            width_list = [self._metrics.width(self._get_data(i)) for i in range(0, self.model().columnCount())] or [0]
         max_width = max(width_list) *1.1
         return max_width
 
@@ -997,9 +1000,13 @@ class WeightEditorWindow(qt.DockWindow):
         self.max_value_but_group.addButton(self.w100_but, 1)
         self.pre_max_id = round(self.max_wt/100, 1)
         self.max_value_but_group.button(self.pre_max_id).setChecked(True)
-        self.max_value_but_group.buttonClicked[int].connect(self.change_maximum_weight)
-        self.max_value_but_group.buttonClicked[int].connect(self.change_max_decimal_digit)
-        
+        if MAYA_VER >= 2025:
+            self.max_value_but_group.idClicked.connect(self.change_maximum_weight)
+            self.max_value_but_group.idClicked.connect(self.change_max_decimal_digit)
+        else:
+            self.max_value_but_group.buttonClicked[int].connect(self.change_maximum_weight)
+            self.max_value_but_group.buttonClicked[int].connect(self.change_max_decimal_digit)
+
         global MAXIMUM_WEIGHT
         MAXIMUM_WEIGHT = self.max_wt
         
@@ -1129,7 +1136,10 @@ class WeightEditorWindow(qt.DockWindow):
                             ja=u'セル選択されたジョイントをハイライトする').output()
         self.joint_hl_but = qt.make_flat_btton(name='Joint Hilite', bg=self.hilite, border_col=180, w_max=j_hl_w, w_min=j_hl_w, h_max=but_h, h_min=but_h, 
                                                             flat=True, hover=True, checkable=True, destroy_flag=True, tip=tip)
-        self.sel_joint_but_group.buttonClicked[int].connect(self.change_joint_tool_mode)
+        if MAYA_VER >= 2025:
+            self.sel_joint_but_group.idClicked.connect(self.change_joint_tool_mode)
+        else:
+            self.sel_joint_but_group.buttonClicked[int].connect(self.change_joint_tool_mode)
         self.joint_hl_but.setChecked(self.joint_hilite)
         self.joint_hl_but.clicked.connect(self.reset_joint_hl)
         self.sel_joint_but_group.addButton(self.n_but, 0)
@@ -1579,8 +1589,11 @@ class WeightEditorWindow(qt.DockWindow):
         self.norm_but.clicked.connect(self.toggle_no_limit_but_enable)
         self.norm_but.rightClicked.connect(lambda : self.enforce_limit_and_normalize(force_norm=True))
         self.no_limit_but.clicked.connect(self.keep_no_limit_flag)
-        self.mode_but_group.buttonClicked[int].connect(self.change_add_mode)
-        
+        if MAYA_VER >= 2025:
+            self.mode_but_group.idClicked.connect(self.change_add_mode)
+        else:
+            self.mode_but_group.buttonClicked[int].connect(self.change_add_mode)
+
         self.norm_but.setChecked(self.norm)
         self.no_limit_but.setChecked(self.no_limit)
         self.toggle_no_limit_but_enable()
