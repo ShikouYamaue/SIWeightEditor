@@ -2,23 +2,25 @@
 import sys
 from maya import OpenMayaUI, cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-#PySide2、PySide両対応
-import imp
-try:
-    imp.find_module('PySide2')
+
+from .maya_version import MAYA_VER
+
+#PySide6、PySide2、PySide全対応
+if MAYA_VER >= 2025:
+    from PySide6.QtWidgets import *
+    from PySide6.QtGui import *
+    from PySide6.QtCore import *
+    import shiboken6 as shiboken
+elif 2017 <= MAYA_VER < 2025:
     from PySide2.QtWidgets import *
     from PySide2.QtGui import *
     from PySide2.QtCore import *
-except ImportError:
+    import shiboken2 as shiboken
+else:
     from PySide.QtGui import *
     from PySide.QtCore import *
-try:
-    imp.find_module("shiboken2")
-    import shiboken2 as shiboken
-except ImportError:
     import shiboken
-    
-MAYA_VER = int(cmds.about(v=True)[:4])
+
 MAYA_API_VER = int(cmds.about(api=True))
 
 try:
@@ -223,7 +225,10 @@ def change_widget_color(widget,
     #ウィジェットのカラー変更
     palette = QPalette()
     palette.setColor(QPalette.Button, bgColor)
-    palette.setColor(QPalette.Background, bgColor)
+    if MAYA_VER >= 2025:
+        palette.setColor(QPalette.Window, bgColor)
+    else:
+        palette.setColor(QPalette.Background, bgColor)
     palette.setColor(QPalette.Base, baseColor)
     palette.setColor(QPalette.Text, textColor)
     

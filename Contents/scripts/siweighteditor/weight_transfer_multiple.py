@@ -9,6 +9,7 @@ import locale
 import json
 import copy
 
+from .maya_version import MAYA_VER
 from . import modeling
 from . import qt
 from . import common
@@ -19,18 +20,20 @@ import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
 import maya.api.OpenMaya as om2
 import maya.api.OpenMayaAnim as oma2
-#PySide2、PySide両対応
-import imp
-try:
-    imp.find_module('PySide2')
+
+#PySide6、PySide2、PySide全対応
+if MAYA_VER >= 2025:
+    from PySide6.QtWidgets import *
+    from PySide6.QtGui import *
+    from PySide6.QtCore import *
+elif 2017 <= MAYA_VER < 2025:
     from PySide2.QtWidgets import *
     from PySide2.QtGui import *
     from PySide2.QtCore import *
-except ImportError:
+else:
     from PySide.QtGui import *
     from PySide.QtCore import *
     
-MAYA_VER = int(cmds.about(v=True)[:4])
 
 if MAYA_VER >= 2016:
     from . import store_skin_weight_om2 as store_skin_weight
