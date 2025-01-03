@@ -840,6 +840,9 @@ class WeightEditorWindow(qt.DockWindow):
         #OpenMayaでウェイト取得するクラスをインスタンス化
         self.store_skin_weight = store_skin_weight.StoreSkinWeight()
         #self.setAcceptDrops(True)#ドロップ可能にしておく
+
+        self.setObjectName("SIWeightEditorWindow")  # <- objectNameを設定
+        self.setProperty("saveWindowPref", True)  # <- ウィンドウ設定の保存を許可
         self._init_ui()
     
     show_flag = False    
