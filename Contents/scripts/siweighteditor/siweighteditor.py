@@ -3312,6 +3312,7 @@ class WeightEditorWindow(qt.DockWindow):
         self.inf_column_dict = {inf:i for i,inf in enumerate(self.all_influences)}
         
         #事前に集めたロック情報をもとにロック設定する
+        invalid_influences = []
         inf_column_dict_keys = self.inf_column_dict.keys()
         for row, lock_data in self.lock_data_dict.items():
             node = self.vtx_row_dict[row][6]
@@ -3327,9 +3328,14 @@ class WeightEditorWindow(qt.DockWindow):
                 try:
                     self.vtx_lock_data_dict[vtx_name].add(node_influence_id_dict[influence])
                 except Exception as e:
-                    print('lock setting error :', '{}'.format(e))
+                    # そのままprintすると回数が多過ぎて重いため同じエラーはまとめる
+                    invalid_influence = e.__str__()
+                    if invalid_influence not in invalid_influences:
+                        invalid_influences.append(invalid_influence)
                     pass
-        
+        if invalid_influences:#空リストではないなら
+            print('lock setting error :', '{}'.format(', '.join(invalid_influences)))
+
         try:#都度メモリをきれいに
             del self.weight_model._data
             self.weight_model._data = {}
