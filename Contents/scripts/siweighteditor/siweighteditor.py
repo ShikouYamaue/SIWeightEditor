@@ -62,7 +62,7 @@ PYTHON_VER = sys.version_info.major
 if PYTHON_VER >= 3:
     round = common.round_half_up
 
-VERSION = 'r1.4.5'
+VERSION = 'r1.4.7'
 
 TITLE = "SIWeightEditor"
     
