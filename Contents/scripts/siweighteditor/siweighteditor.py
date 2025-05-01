@@ -2589,6 +2589,7 @@ class WeightEditorWindow(qt.DockWindow):
             vertices = self.node_vtx_dict[node]
             #print(len(vertices))
             lock_influences = [self.all_influences[section_id] for section_id in section_ids]
+            lock_influences = [inf for inf in lock_influences if inf in self.influences_dict[node]]
             pre_lock_data_dict = self.decode_lock_data(skin_cluster)
             for vtx in vertices:
                 after_lock_influences = []
@@ -2682,7 +2683,7 @@ class WeightEditorWindow(qt.DockWindow):
             
             #まとめて処理するためにいろいろ情報を整理して格納
             skin_vtx_dict[skin_cluster] += [vtx]
-            vtx_lock_dict[vtx] += [rock_influence]
+            vtx_lock_dict[skin_cluster+str(vtx)] += [rock_influence]
             
         self.counter.count(string='lock cell :')
         
@@ -2695,7 +2696,7 @@ class WeightEditorWindow(qt.DockWindow):
                 pre_lock_data_dict = self.decode_lock_data(skin_cluster)
                 
                 for vtx in vertices:
-                    lock_influences = vtx_lock_dict[vtx]
+                    lock_influences = vtx_lock_dict[skin_cluster+str(vtx)]
                     try:#キーの有無を比較すると重かったので例外処理で乗り切る
                         pre_lock_influences = pre_lock_data_dict[vtx]
                         lock_influences = list(set(lock_influences+pre_lock_influences))
@@ -2754,7 +2755,7 @@ class WeightEditorWindow(qt.DockWindow):
             rock_influence = influences[rock_id]#ロックするインフルエンス
             #まとめて処理するためにいろいろ情報を整理して格納
             skin_vtx_dict[skin_cluster] += [vtx]
-            vtx_lock_dict[vtx] += [rock_influence]
+            vtx_lock_dict[skin_cluster+str(vtx)] += [rock_influence]
         if all_lock:
             self.lock_all_vtx_weight(section_ids=section_ids, add=False)
         else:
@@ -2763,7 +2764,7 @@ class WeightEditorWindow(qt.DockWindow):
                 new_lock_data_list = []
                 pre_lock_data_dict = self.decode_lock_data(skin_cluster)
                 for vtx in vertices:
-                    lock_influences = vtx_lock_dict[vtx]
+                    lock_influences = vtx_lock_dict[skin_cluster+str(vtx)]
                     try:
                         pre_lock_influences = pre_lock_data_dict[vtx]
                         lock_influences = list(set(pre_lock_influences)-set(lock_influences))
