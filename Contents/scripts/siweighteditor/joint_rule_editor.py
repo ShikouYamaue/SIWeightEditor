@@ -3,7 +3,6 @@ from . import qt
 from . import lang
 import os
 import json
-import imp
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 
 from .maya_version import MAYA_VER
