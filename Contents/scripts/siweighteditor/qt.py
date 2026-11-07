@@ -116,7 +116,9 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
             self.sel_all_input()
             self.focused.emit()
         if event.type() == QEvent.Wheel:
-            delta = event.delta()
+            delta = event.angleDelta().y() if MAYA_VER >= 2025 else event.delta()
+            if not delta:
+                return False
             delta /= abs(delta)
             shift_mod = self.check_shift_modifiers()
             ctrl_mod = self.check_ctrl_modifiers()

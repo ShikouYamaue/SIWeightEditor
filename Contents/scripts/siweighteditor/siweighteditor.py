@@ -22,7 +22,10 @@ import locale
 import json
 import sys
 import webbrowser
-from imp import reload
+if sys.version_info[0] >= 3:
+    from importlib import reload
+else:
+    from __builtin__ import reload
 
 from .maya_version import MAYA_VER
 from . import common
@@ -138,7 +141,9 @@ class EditorDoubleSpinbox(QDoubleSpinBox):
             self.sel_all_input()
             self.focused.emit()
         if event.type() == QEvent.Wheel:
-            delta = event.delta()
+            delta = event.angleDelta().y() if MAYA_VER >= 2025 else event.delta()
+            if not delta:
+                return False
             delta /= abs(delta)#120単位を1単位に直す
             shift_mod = self.check_shift_modifiers()
             ctrl_mod = self.check_ctrl_modifiers()
@@ -4414,7 +4419,10 @@ def restoration_workspacecontrol():
     WINDOW = make_ui()
     restoredControl = omui.MQtUtil.getCurrentParent()
     mixinPtr = omui.MQtUtil.findControl(WINDOW.objectName())
-    omui.MQtUtil.addWidgetToMayaLayout(long(mixinPtr), long(restoredControl))
+    if sys.version_info[0] >= 3:
+        omui.MQtUtil.addWidgetToMayaLayout(int(mixinPtr), int(restoredControl))
+    else:
+        omui.MQtUtil.addWidgetToMayaLayout(long(mixinPtr), long(restoredControl))
     #動的配置ボタンを復旧しておく
     WINDOW.init_flag = False
     WINDOW.resizeEvent(WINDOW)
